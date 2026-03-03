@@ -1,0 +1,18 @@
+
+{{- if and .Values.database.enabled .Values.database.persistence.enabled }}
+# MySQL PersistentVolumeClaim (Helm template, matches Session 13 manifest)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: mysql
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.database.persistence.size | default "1Gi" }}
+{{- end }}

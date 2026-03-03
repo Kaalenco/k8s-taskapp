@@ -1,0 +1,127 @@
+{{/*
+NOTES.txt is displayed after successful installation/upgrade.
+It provides helpful information to the user about accessing the application.
+*/}}
+
+TaskApp has been deployed successfully!
+
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Values.global.namespace }}
+Chart Version: {{ .Chart.Version }}
+App Version: {{ .Chart.AppVersion }}
+
+Deployed Components:
+{{- if .Values.database.enabled }}
+  [x] MySQL Database ({{ .Values.database.persistence.size }} storage)
+{{- else }}
+  - MySQL Database (disabled - using external database)
+{{- end }}
+{{- if .Values.backend.enabled }}
+  [x] Backend API ({{ .Values.backend.replicaCount }} replicas)
+{{- end }}
+{{- if .Values.frontend.enabled }}
+  [x] Frontend Web App ({{ .Values.frontend.replicaCount }} replicas)
+{{- end }}
+{{- if .Values.ingress.enabled }}
+  [x] Ingress (HTTPS enabled)
+{{- end }}
+
+Check Deployment Status:
+
+  kubectl get all -n {{ .Values.global.namespace }}
+  kubectl get pods -n {{ .Values.global.namespace }} -w
+
+{{- if .Values.ingress.enabled }}
+
+Access Your Application:
+
+{{- range .Values.ingress.hosts }}
+  {{- if $.Values.ingress.tls.enabled }}
+  https://{{ .host }}
+  {{- else }}
+  http://{{ .host }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.ingress.tls.enabled }}
+WARNING - TLS Certificate Required:
+  Make sure the TLS secret exists:
+  kubectl get secret {{ .Values.ingress.tls.secretName }} -n {{ .Values.global.namespace }}
+
+  To create a self-signed certificate:
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout tls.key -out tls.crt \
+    -subj "/CN={{ (index .Values.ingress.hosts 0).host }}/O=TaskApp"
+
+  kubectl create secret tls {{ .Values.ingress.tls.secretName }} \
+    --cert=tls.crt --key=tls.key \
+    -n {{ .Values.global.namespace }}
+{{- end }}
+
+Add to /etc/hosts (for local testing):
+  127.0.0.1 {{ (index .Values.ingress.hosts 0).host }}
+
+{{- else }}
+
+Port-Forward to Access:
+
+  # Frontend:
+  kubectl port-forward -n {{ .Values.global.namespace }} svc/{{ include "taskapp.fullname" . }}-frontend 8080:80
+  # Then visit: http://localhost:8080
+
+  # Backend API:
+  kubectl port-forward -n {{ .Values.global.namespace }} svc/{{ include "taskapp.fullname" . }}-backend 8081:80
+  # Then visit: http://localhost:8081/health
+
+{{- end }}
+
+Useful Commands:
+
+  # View logs:
+  kubectl logs -n {{ .Values.global.namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} --tail=50 -f
+
+  # View events:
+  kubectl get events -n {{ .Values.global.namespace }} --sort-by='.lastTimestamp'
+
+  # Describe resources:
+  kubectl describe deployment -n {{ .Values.global.namespace }}
+
+  # Check autoscaling:
+  kubectl get hpa -n {{ .Values.global.namespace }}
+
+Manage Your Release:
+
+  # Upgrade with new values:
+  helm upgrade {{ .Release.Name }} {{ .Chart.Name }} -f my-values.yaml
+
+  # Rollback to previous version:
+  helm rollback {{ .Release.Name }}
+
+  # View release history:
+  helm history {{ .Release.Name }}
+
+  # Uninstall:
+  helm uninstall {{ .Release.Name }}
+
+Documentation:
+  Chart: {{ .Chart.Home }}
+  Kubernetes 101 Course: https://github.com/yourorg/kubernetes-101
+
+Tips:
+  - Wait 1-2 minutes for all pods to be ready
+  - Check pod logs if anything fails to start
+  - Ensure Ingress controller is installed (Session 10)
+  - Database initialization may take 30-60 seconds
+
+{{- if not .Values.database.enabled }}
+
+WARNING - External Database Configuration:
+  You've disabled the internal MySQL database.
+  Make sure to configure backend to connect to your external database.
+
+  Current backend configuration:
+  - Database Host: {{ .Values.backend.config.dbHost | default "NOT CONFIGURED" }}
+  - Database Port: {{ .Values.backend.config.dbPort | default "NOT CONFIGURED" }}
+{{- end }}
+
+Enjoy TaskApp!

@@ -1,0 +1,86 @@
+
+{{- if .Values.database.enabled }}
+# MySQL Database Deployment (Helm template, matches Session 13 manifest)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: mysql
+    tier: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mysql
+      tier: database
+  template:
+    metadata:
+      labels:
+        app: mysql
+        tier: database
+    spec:
+      containers:
+      - name: mysql
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        imagePullPolicy: {{ .Values.database.image.pullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-root-password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-database
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          {{- toYaml .Values.database.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      - name: mysql-init
+        configMap:
+          name: {{ include "taskapp.fullname" . }}-mysql-init
+{{- end }}

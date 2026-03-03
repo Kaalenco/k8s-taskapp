@@ -1,0 +1,188 @@
+# Helm Chart Metadata
+# Session 16: Helm Package Manager
+#
+# This file defines metadata about the Helm chart.
+#
+# What is a Helm Chart?
+# A Helm chart is a package of pre-configured Kubernetes resources.
+# Think of it as a template for deploying applications.
+#
+# Chart Structure:
+#
+# Chart.yaml         - Metadata (this file)
+# values.yaml        - Default configuration values
+# templates/         - Kubernetes YAML templates
+# charts/            - Dependent charts (if any)
+# README.md          - Documentation
+#
+# Why Helm?
+# - Single command to deploy entire application
+# - Consistent deployments across environments
+# - Easy upgrades and rollbacks
+# - Configuration management with values
+# - Share charts with teams or public repositories
+#
+# Chart.yaml Fields:
+# - apiVersion: Chart API version (v2 is current)
+# - name: Chart name (must match directory name)
+# - version: Chart version (SemVer: MAJOR.MINOR.PATCH)
+# - appVersion: Version of application being deployed
+# - description: Human-readable description
+# - type: application (deployable app) or library (shared templates)
+# - keywords: Search terms for chart repositories
+# - home: Project home page URL
+# - sources: Source code URLs
+# - maintainers: People responsible for chart
+#
+# Chart Versioning:
+# - Chart version: Version of the chart itself
+#   Increment when you change templates or values
+#   Example: 1.0.0 → 1.0.1 (bug fix), 1.1.0 (new feature), 2.0.0 (breaking change)
+#
+# - App version: Version of the application
+#   This is informational, doesn't affect deployment
+#   Example: Your app might be v1.2.3, chart is 1.0.0
+#
+# Best Practice: Keep them separate
+# - Same app version can have different chart versions (template improvements)
+# - Same chart version can deploy different app versions (via values override)
+
+apiVersion: v2
+name: taskapp
+version: 1.0.0
+appVersion: "1.0.0"
+description: A three-tier task management application with MySQL, backend API, and frontend
+type: application
+
+# Optional but recommended fields
+# The icon field can be a URL or a base64-encoded string of the image (for embedding)
+icon: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA2NCA2NCcgd2lkdGg9JzY0JyBoZWlnaHQ9JzY0Jz48Y2lyY2xlIGN4PSczMicgY3k9JzMyJyByPSczMicgZmlsbD0nIzBmNWZmZicvPjx0ZXh0IHg9JzMyJyB5PSczOCcgZm9udC1zaXplPScyNCcgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nI2ZmZicgZm9udC1mYW1pbHk9J0FyaWFsJz5IZWxtPC90ZXh0Pjwvc3ZnPg=="
+
+keywords:
+  - taskapp
+  - three-tier
+  - mysql
+  - nodejs
+  - nginx
+
+# Project URLs (update these for your project)
+# home: https://github.com/yourorg/taskapp
+# sources:
+#   - https://github.com/yourorg/taskapp
+
+# Maintainers information
+maintainers:
+  - name: Kubernetes 101 Course
+    # email: maintainer@example.com
+    # url: https://github.com/yourorg
+
+# Chart dependencies (if using external charts)
+# Uncomment to use Bitnami MySQL chart instead of our custom MySQL
+# dependencies:
+#   - name: mysql
+#     version: 9.3.4
+#     repository: https://charts.bitnami.com/bitnami
+#     condition: mysql.enabled
+#     tags:
+#       - database
+#
+# To use dependencies:
+#   helm dependency update
+# This downloads dependent charts to charts/ directory
+
+# Annotations for additional metadata
+# Used by Helm and chart repositories
+annotations:
+  # Category for Artifact Hub (public chart repository)
+  category: application
+
+  # Licenses (SPDX identifier)
+  # licenses: MIT
+
+  # Images used in chart (for security scanning)
+  images: |
+    - name: mysql
+      image: mysql:8.0
+    - name: backend
+      image: taskapp-backend:latest
+    - name: frontend
+      image: 18-alpine:latest
+
+# Icon URL for chart (displayed in UIs)
+# icon: https://example.com/taskapp-icon.png
+
+# Chart API Version Notes:
+#
+# v2 (current):
+# - Helm 3+ only
+# - Supports dependencies field
+# - Supports library charts
+# - Supports conditional dependencies
+#
+# v1 (legacy):
+# - Helm 2 compatible
+# - Uses requirements.yaml for dependencies
+# - Deprecated, use v2
+
+# Useful Helm Commands:
+#
+# Package chart:
+#   helm package ./taskapp-chart
+#   # Creates: taskapp-1.0.0.tgz
+#
+# Lint chart:
+#   helm lint ./taskapp-chart
+#   # Checks for errors in templates
+#
+# Show chart info:
+#   helm show chart ./taskapp-chart
+#   helm show values ./taskapp-chart
+#   helm show readme ./taskapp-chart
+#   helm show all ./taskapp-chart
+#
+# Install chart:
+#   helm install my-taskapp ./taskapp-chart
+#   # Release name: my-taskapp
+#
+# Upgrade chart:
+#   helm upgrade my-taskapp ./taskapp-chart
+#
+# Rollback to previous version:
+#   helm rollback my-taskapp
+#
+# List installed releases:
+#   helm list
+#
+# Uninstall release:
+#   helm uninstall my-taskapp
+
+# Publishing Charts:
+#
+# To share charts with your team or publicly:
+#
+# 1. Create chart repository (GitHub Pages, S3, etc.)
+# 2. Package chart: helm package ./taskapp-chart
+# 3. Generate index: helm repo index .
+# 4. Upload to repository
+# 5. Add repository: helm repo add myrepo https://charts.example.com
+# 6. Install from repo: helm install my-taskapp myrepo/taskapp
+#
+# Popular public repositories:
+# - Artifact Hub: https://artifacthub.io
+# - Bitnami: https://charts.bitnami.com/bitnami
+# - Stable (deprecated): https://charts.helm.sh/stable
+
+# Chart Testing:
+#
+# Before publishing, test thoroughly:
+#   helm install test-release ./taskapp-chart --dry-run --debug
+#   # Shows rendered templates without deploying
+#
+#   helm template test-release ./taskapp-chart
+#   # Renders templates locally
+#
+#   helm install test-release ./taskapp-chart --create-namespace
+#   # Deploy to test namespace
+#
+#   helm test test-release
+#   # Run chart tests (if defined)

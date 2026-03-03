@@ -1,0 +1,70 @@
+{{- if .Values.frontend.enabled }}
+# Frontend ConfigMap Template
+# Session 16: Helm Package Manager
+#
+# This template creates the ConfigMap for the frontend.
+# Contains both the Nginx configuration and the runtime env.js file.
+#
+# Why Template This?
+# - API URL changes per environment (dev/staging/prod)
+# - Nginx proxy settings may differ
+# - App name and configuration are environment-specific
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "taskapp.fullname" . }}-frontend-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "taskapp.componentLabels" (dict "component" "frontend" "context" .) | nindent 4 }}
+data:
+  env.js: |
+    window.env = {
+      API_URL: '{{ .Values.frontend.config.apiUrl }}',
+      APP_NAME: '{{ .Values.frontend.config.appName }}'
+    };
+  nginx.conf: |
+    # IMPORTANT: The frontend image must include /usr/share/nginx/html/health for Kubernetes probes to pass.
+    # The /health endpoint below is a fallback, but the file is required for Helm chart to work as documented.
+    events {}
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+      server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # SPA routing - serve index.html for all routes
+        location / {
+          try_files $uri $uri/ /index.html;
+        }
+
+        # API proxy - forward to backend service
+        location /api/ {
+          proxy_pass http://backend:{{ .Values.backend.service.port }}/api/;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Health endpoint for probes
+        location /health {
+          access_log off;
+          return 200 'healthy';
+          add_header Content-Type text/plain;
+        }
+
+        # Gzip compression
+        gzip on;
+        gzip_types text/plain text/css application/json application/javascript text/xml;
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+      }
+    }
+{{- end }}

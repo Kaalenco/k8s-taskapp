@@ -1,0 +1,385 @@
+# Helm Chart Default Values
+# Session 16: Helm Package Manager
+#
+# This file contains default configuration values for the chart.
+#
+# How Helm Values Work:
+# 1. values.yaml provides defaults
+# 2. Users can override with custom values file: helm install -f custom-values.yaml
+# 3. Or override individual values: helm install --set database.password=secret
+# 4. Templates reference values with {{ .Values.database.password }}
+#
+# Value Precedence (highest to lowest):
+# 1. --set values from command line
+# 2. -f values file from command line
+# 3. values.yaml in chart (this file)
+#
+# Benefits of Values:
+# - Single configuration file for entire application
+# - Different values for dev/staging/prod environments
+# - Override defaults without changing templates
+# - Share charts with configurable options
+# - Clear documentation of all configuration options
+#
+# Naming Convention:
+# - Use camelCase for value names
+# - Nest related values in sections
+# - Provide sensible defaults
+# - Comment each value to explain its purpose
+
+# Global values accessible to all charts
+# Useful when chart has dependencies
+global:
+  # Namespace where resources will be created
+  namespace: taskapp
+
+# Database tier configuration
+database:
+  # Enable/disable database deployment
+  # Set to false if using external database (like Azure SQL)
+  enabled: true
+
+  # MySQL image configuration
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+
+  # Database credentials
+  # IMPORTANT: Override these in production!
+  # Use: helm install --set database.rootPassword=secret
+  # Or create separate values-prod.yaml with strong passwords
+  rootPassword: rootpassword123
+  database: taskdb
+  user: taskuser
+  password: taskpass123
+
+  # Persistent storage configuration
+  persistence:
+    enabled: true
+    # Storage class (leave empty for default)
+    # Options: standard, gp2 (AWS), azurefile (Azure), etc.
+    storageClass: ""
+    # Storage size
+    size: 1Gi
+    # Access mode: ReadWriteOnce (single node) or ReadWriteMany (multi-node)
+    accessMode: ReadWriteOnce
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3306
+
+  # Health probe configuration
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+
+# Backend API tier configuration
+backend:
+  # Enable/disable backend deployment
+  enabled: true
+
+
+  # Backend image (must be a flat string: repository:tag)
+  # Example: "taskapp-backend:latest" or your registry path
+  image: "taskapp-backend:latest"
+  # If using a remote registry, use the full path, e.g.:
+  # image: "ghcr.io/youruser/taskapp-backend:latest"
+  imagePullPolicy: IfNotPresent
+
+  # Number of replicas
+  # Min 2 for high availability
+  replicaCount: 2
+
+  # Deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  # Application configuration
+  config:
+    port: 3000
+    nodeEnv: production
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+
+  # Health probe configuration
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 30
+    successThreshold: 1
+    path: /health
+
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+    path: /health
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 2
+    successThreshold: 1
+    path: /health
+
+  # Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Frontend web tier configuration
+frontend:
+  # Enable/disable frontend deployment
+  enabled: true
+
+  # Frontend image configuration
+  # Frontend image (must be your custom build with /health file)
+  image:
+    repository: taskapp-frontend
+    tag: "v2"
+    pullPolicy: IfNotPresent
+
+  # Number of replicas
+  replicaCount: 2
+
+  # Deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  # Application configuration
+  config:
+    # API URL that frontend will connect to
+    # This is injected into env.js
+    apiUrl: ""
+    appName: "Task Manager"
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  # Health probe configuration
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+    path: /health
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 2
+    successThreshold: 1
+    path: /health
+
+# Ingress configuration for external access
+ingress:
+  # Enable/disable ingress
+  enabled: true
+
+  # Ingress class (nginx, traefik, alb, gce, etc.)
+  className: "nginx"
+
+  # Annotations for ingress controller
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+
+  # Hostname configuration
+  hosts:
+    - host: taskapp.local
+      paths:
+        - path: /
+          pathType: Prefix
+          # Service to route to (frontend)
+          service: frontend
+          port: 80
+
+  # TLS configuration
+  tls:
+    # Set enabled: true only when the cluster terminates TLS (e.g. cert-manager + Let's Encrypt).
+    # When an external load balancer (e.g. UpCloud LB) does SSL termination, leave this false —
+    # the LB forwards plain HTTP to the ingress controller and no in-cluster cert is needed.
+    enabled: false
+    # Secret name containing TLS certificate
+    # Create before deploying: kubectl create secret tls taskapp-tls --cert=tls.crt --key=tls.key
+    secretName: taskapp-tls
+    # Hosts covered by certificate
+    hosts:
+      - taskapp.local
+
+# Security context (applied to all pods)
+# Run as non-root user for security
+securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Pod scheduling configuration
+# Useful for production deployments
+nodeSelector: {}
+  # Example: Deploy to specific node pool
+  # nodeType: application
+
+tolerations: []
+  # Example: Tolerate specific taints
+  # - key: "node-role"
+  #   operator: "Equal"
+  #   value: "application"
+  #   effect: "NoSchedule"
+
+affinity: {}
+  # Example: Spread pods across zones
+  # podAntiAffinity:
+  #   preferredDuringSchedulingIgnoredDuringExecution:
+  #   - weight: 100
+  #     podAffinityTerm:
+  #       labelSelector:
+  #         matchExpressions:
+  #         - key: app
+  #           operator: In
+  #           values:
+  #           - backend
+  #       topologyKey: topology.kubernetes.io/zone
+
+# Example: Environment-Specific Values Files
+#
+# values-dev.yaml:
+#   database:
+#     persistence:
+#       size: 500Mi
+#   backend:
+#     replicaCount: 1
+#   frontend:
+#     replicaCount: 1
+#   ingress:
+#     hosts:
+#       - host: taskapp-dev.local
+#
+# values-prod.yaml:
+#   database:
+#     rootPassword: <from-secret-manager>
+#     password: <from-secret-manager>
+#     persistence:
+#       size: 10Gi
+#   backend:
+#     replicaCount: 5
+#     autoscaling:
+#       maxReplicas: 20
+#   frontend:
+#     replicaCount: 3
+#   ingress:
+#     hosts:
+#       - host: taskapp.example.com
+#     tls:
+#       secretName: letsencrypt-prod-cert
+#
+# Deploy:
+#   helm install taskapp-prod ./taskapp-chart -f values-prod.yaml
+
+# Example: Command-Line Overrides
+#
+# Override single value:
+#   helm install taskapp ./taskapp-chart --set database.password=newsecret
+#
+# Override nested value:
+#   helm install taskapp ./taskapp-chart --set backend.resources.limits.memory=512Mi
+#
+# Override multiple values:
+#   helm install taskapp ./taskapp-chart \
+#     --set database.password=secret1 \
+#     --set backend.replicaCount=3 \
+#     --set ingress.hosts[0].host=taskapp.example.com
+#
+# Disable component:
+#   helm install taskapp ./taskapp-chart --set database.enabled=false
+#   # Use this when connecting to external database
+
+# Example: Using with External Services
+#
+# When using Azure SQL (Session 13a) or external database:
+#
+# values-azure.yaml:
+#   database:
+#     enabled: false  # Don't deploy MySQL
+#   backend:
+#     config:
+#       dbHost: myserver.database.windows.net
+#       dbPort: 1433
+#       dbName: taskdb
+#       dbUser: taskuser
+#       dbPassword: <from-azure-keyvault>
+#
+# Deploy:
+#   helm install taskapp ./taskapp-chart -f values-azure.yaml

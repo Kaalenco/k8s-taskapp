@@ -1,0 +1,68 @@
+
+{{- if .Values.backend.enabled }}
+# Backend API Deployment (Helm template, matches Session 14 manifest)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: backend
+    tier: api
+spec:
+  replicas: {{ .Values.backend.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      app: backend
+      tier: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: api
+    spec:
+      containers:
+      - name: backend-api
+        image: "{{ .Values.backend.image }}"
+        imagePullPolicy: {{ .Values.backend.imagePullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: DB_HOST
+          value: mysql
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-database
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+{{- end }}

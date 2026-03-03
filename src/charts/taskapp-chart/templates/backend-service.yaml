@@ -1,0 +1,22 @@
+
+{{- if .Values.backend.enabled }}
+# Backend API Service (Helm template, matches Session 14 manifest)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: backend
+    tier: api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: backend
+    tier: api
+{{- end }}

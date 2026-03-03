@@ -1,0 +1,74 @@
+
+{{- if .Values.frontend.enabled }}
+# Frontend Deployment (Helm template, matches Session 15 manifest)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: frontend
+    tier: presentation
+spec:
+  replicas: {{ .Values.frontend.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      app: frontend
+      tier: presentation
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: frontend
+        tier: presentation
+    spec:
+      containers:
+      - name: frontend
+        # IMPORTANT: This image must include /usr/share/nginx/html/health for probes to pass
+        # See Session 15 and values.yaml for build instructions
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          {{- toYaml .Values.frontend.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: frontend-env
+          mountPath: /usr/share/nginx/html/env.js
+          subPath: env.js
+        # Optionally, override the command to ensure nginx uses the custom config
+        command: ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/nginx.conf"]
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ include "taskapp.fullname" . }}-frontend-config
+          items:
+            - key: nginx.conf
+              path: nginx.conf
+      - name: frontend-env
+        configMap:
+          name: {{ include "taskapp.fullname" . }}-frontend-config
+          items:
+            - key: env.js
+              path: env.js
+{{- end }}

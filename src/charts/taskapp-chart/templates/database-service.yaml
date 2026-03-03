@@ -1,0 +1,22 @@
+
+{{- if .Values.database.enabled }}
+# MySQL Database Service (Helm template, matches Session 13 manifest)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: mysql
+    tier: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3306
+    targetPort: 3306
+    protocol: TCP
+    name: mysql
+  selector:
+    app: mysql
+    tier: database
+{{- end }}

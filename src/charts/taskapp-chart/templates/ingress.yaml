@@ -1,0 +1,42 @@
+
+{{- if .Values.ingress.enabled }}
+# Application Ingress (Helm template, matches Session 15 manifest)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: taskapp-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: taskapp
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - taskapp.local
+    secretName: taskapp-tls
+  rules:
+  - host: taskapp.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 80
+{{- end }}

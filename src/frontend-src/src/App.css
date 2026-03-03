@@ -1,0 +1,370 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f4f6f9;
+  color: #1a1a2e;
+}
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #1a2744;
+  color: #c8d3e8;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px 24px;
+  border-bottom: 1px solid #2a3a5c;
+}
+
+.sidebar-logo {
+  font-size: 20px;
+  color: #4a9eff;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.nav-links {
+  list-style: none;
+  padding: 16px 0;
+  flex: 1;
+}
+
+.nav-links li a {
+  display: block;
+  padding: 11px 24px;
+  color: #a0b0cc;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.nav-links li a:hover {
+  background: #243358;
+  color: #ffffff;
+}
+
+.nav-links li a.active {
+  background: #243358;
+  color: #ffffff;
+  border-left-color: #4a9eff;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  font-size: 11px;
+  color: #4a5a7a;
+  border-top: 1px solid #2a3a5c;
+}
+
+/* ── Main content ── */
+.content {
+  margin-left: 220px;
+  flex: 1;
+  padding: 40px;
+  min-height: 100vh;
+}
+
+/* ── Page header ── */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.page-header p {
+  margin-top: 6px;
+  color: #6b7a99;
+  font-size: 14px;
+}
+
+/* ── Cards ── */
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+/* ── Status badges ── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.badge-todo       { background: #eef0f5; color: #6b7a99; }
+.badge-in-progress { background: #fff7e6; color: #b07d00; }
+.badge-done       { background: #e6f9f0; color: #1a8a5a; }
+
+.badge-ok  { background: #e6f9f0; color: #1a8a5a; }
+.badge-err { background: #fdecea; color: #c0392b; }
+
+/* ── Home page ── */
+.home-hero {
+  text-align: center;
+  padding: 60px 40px;
+}
+
+.home-hero h1 {
+  font-size: 42px;
+  font-weight: 800;
+  color: #1a2744;
+  margin-bottom: 12px;
+}
+
+.home-hero p {
+  font-size: 16px;
+  color: #6b7a99;
+  margin-bottom: 36px;
+}
+
+.home-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 24px;
+  margin-bottom: 40px;
+}
+
+.home-status.ok  { background: #e6f9f0; color: #1a8a5a; }
+.home-status.err { background: #fdecea; color: #c0392b; }
+.home-status.checking { background: #f0f2f8; color: #6b7a99; }
+
+.home-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Status page ── */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.status-metric {
+  background: #f8f9fc;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.status-metric .label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7a99;
+  margin-bottom: 8px;
+}
+
+.status-metric .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a2744;
+}
+
+.status-metric .value.small {
+  font-size: 13px;
+  word-break: break-all;
+}
+
+pre.json-block {
+  background: #1a2744;
+  color: #a0e8af;
+  padding: 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow: auto;
+  max-height: 280px;
+}
+
+/* ── Task list ── */
+.task-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.task-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7a99;
+  border-bottom: 2px solid #eef0f5;
+}
+
+.task-table td {
+  padding: 14px;
+  border-bottom: 1px solid #eef0f5;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.task-table tr:last-child td {
+  border-bottom: none;
+}
+
+.task-table tr:hover td {
+  background: #f8f9fc;
+}
+
+.task-title {
+  font-weight: 600;
+  color: #1a2744;
+}
+
+.task-desc {
+  color: #6b7a99;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7a99;
+}
+
+.empty-state p {
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+/* ── Forms ── */
+.form {
+  max-width: 520px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2744;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid #dde1ec;
+  border-radius: 7px;
+  font-size: 14px;
+  color: #1a2744;
+  background: #fff;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.form-error {
+  background: #fdecea;
+  color: #c0392b;
+  padding: 10px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.btn:hover { opacity: 0.88; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary { background: #4a9eff; color: #fff; }
+.btn-secondary { background: #eef0f5; color: #1a2744; }
+.btn-danger { background: #fdecea; color: #c0392b; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }

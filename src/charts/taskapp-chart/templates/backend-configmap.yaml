@@ -1,0 +1,26 @@
+{{- if .Values.backend.enabled }}
+# Backend API ConfigMap Template
+# Session 16: Helm Package Manager
+#
+# This template creates the ConfigMap for backend environment variables.
+#
+# Why Template ConfigMaps?
+# - Database host changes when using external DB vs internal MySQL
+# - Port and environment settings differ per deployment
+# - The databaseHost helper automatically resolves the correct host
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "taskapp.fullname" . }}-backend-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "taskapp.componentLabels" (dict "component" "backend" "context" .) | nindent 4 }}
+data:
+  DB_HOST: {{ include "taskapp.databaseHost" . | quote }}
+  DB_PORT: {{ .Values.database.service.port | quote }}
+  DB_NAME: {{ .Values.database.database | quote }}
+  DB_USER: {{ .Values.database.user | quote }}
+  PORT: {{ .Values.backend.config.port | quote }}
+  NODE_ENV: {{ .Values.backend.config.nodeEnv | quote }}
+{{- end }}

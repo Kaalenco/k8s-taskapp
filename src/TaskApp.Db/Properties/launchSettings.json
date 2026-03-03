@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TaskApp.Db": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

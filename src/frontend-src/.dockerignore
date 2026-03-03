@@ -1,0 +1,5 @@
+// Minimal .dockerignore for React app
+node_modules
+build
+dist
+.env
