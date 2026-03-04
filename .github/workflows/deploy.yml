@@ -63,6 +63,8 @@ jobs:
   build-backend:
     name: Build Backend Image
     runs-on: ubuntu-latest  # GitHub-hosted runner
+    permissions:
+      security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
     # Outputs: Pass data to other jobs
     outputs:
@@ -148,7 +150,7 @@ jobs:
 
     # Step 7: Upload scan results to GitHub Security
     - name: Upload Trivy results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
       # View results in GitHub Security tab
@@ -157,6 +159,8 @@ jobs:
   build-frontend:
     name: Build Frontend Image
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
@@ -215,7 +219,7 @@ jobs:
 
     # Step 7: Upload scan results to GitHub Security
     - name: Upload Trivy results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results-frontend.sarif'
 
