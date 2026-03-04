@@ -1,6 +1,6 @@
 # Build a frontend image directly from a GitHub repository (React/Vite example)
 # Usage:
-#   docker build -f Dockerfile.github \
+#   docker build -f Dockerfile \
 #     --build-arg GIT_REPO=https://github.com/<your-org>/<your-react-repo> \
 #     --build-arg GIT_REF=main \
 #     -t taskapp-frontend:github .
