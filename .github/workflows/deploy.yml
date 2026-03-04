@@ -294,7 +294,13 @@ jobs:
     # Step 5: Create namespace if doesn't exist
     - name: Create namespace
       run: |
-        kubectl create namespace ${{ env.KUBERNETES_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f - <<EOF
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: ${{ env.KUBERNETES_NAMESPACE }}
+        EOF
+      # kubectl apply is idempotent: no-op if namespace already exists
 
     # Step 6: Deploy with Helm
     - name: Deploy with Helm
