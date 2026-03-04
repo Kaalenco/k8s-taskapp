@@ -236,8 +236,9 @@ jobs:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]  # Waits for both builds to succeed
-    # Only deploy on push to trunk (not PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/trunk'
+    # Deploy on push to trunk, or manual trigger (workflow_dispatch) from trunk.
+    # Pull requests are excluded — they build and scan but never deploy.
+    if: github.ref == 'refs/heads/trunk' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     steps:
     # Step 1: Checkout code (for Helm charts)
