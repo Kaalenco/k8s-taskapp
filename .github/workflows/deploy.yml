@@ -153,7 +153,8 @@ jobs:
 
     # Step 7: Upload scan results to GitHub Security
     - name: Upload Trivy results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
+      continue-on-error: true  # Requires public repo or GitHub Advanced Security
       with:
         sarif_file: 'trivy-results.sarif'
       # View results in GitHub Security tab
@@ -225,7 +226,8 @@ jobs:
 
     # Step 7: Upload scan results to GitHub Security
     - name: Upload Trivy results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
+      continue-on-error: true  # Requires public repo or GitHub Advanced Security
       with:
         sarif_file: 'trivy-results-frontend.sarif'
 
