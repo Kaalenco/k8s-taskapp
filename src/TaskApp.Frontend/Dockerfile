@@ -1,4 +1,8 @@
 FROM node:20-alpine AS build
+# Pin npm to the same major version used to generate package-lock.json (v11).
+# Mismatched npm versions between local and Docker cause 'npm ci' to fail with
+# "Missing: X from lock file" even when the lock file is otherwise correct.
+RUN npm install -g npm@11
 WORKDIR /app
 
 # Install dependencies (separate layer for caching)
