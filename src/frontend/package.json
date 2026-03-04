@@ -13,6 +13,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:local": "react-scripts build && node scripts/inject-env.js http://localhost:5000",
+    "serve:local": "npm run build:local && serve -s build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },

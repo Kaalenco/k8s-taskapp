@@ -32,11 +32,29 @@ docker build -f Dockerfile.github \
 
 ## 3) Run locally (optional)
 
+**With Docker:**
+
 ```bash
 docker run --rm -p 8080:80 taskapp-frontend:github
 ```
 
 Open `http://localhost:8080` to verify the build.
+
+**Without Docker** (requires the API running on port 5000):
+
+```bash
+npm install
+npm run serve:local
+```
+
+This builds the app, injects `window.env = { "API_URL": "http://localhost:5000" }` into
+`build/index.html`, and serves the result on `http://localhost:3000`.
+
+To only build (without serving):
+
+```bash
+npm run build:local
+```
 
 ## Notes
 

@@ -50,8 +50,9 @@ builder.Services.AddCors(options =>
 //             ASP.NET Core process is running. Does NOT require database connectivity.
 // /ready   — readiness check: verifies the database is reachable before the pod
 //             receives traffic. Returns 503 if the database is unavailable.
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<TaskDbContext>(tags: new[] { "ready" });
+builder.Services
+    .AddHealthChecks()
+    .AddDbContextCheck<TaskDbContext>(tags: ["ready"]);
 
 var app = builder.Build();
 
