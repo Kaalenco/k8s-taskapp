@@ -107,7 +107,7 @@ backend:
   image: "taskapp-backend:latest"
   # If using a remote registry, use the full path, e.g.:
   # image: "ghcr.io/youruser/taskapp-backend:latest"
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
   # Number of replicas
   # Min 2 for high availability
