@@ -6,8 +6,8 @@
 #     -t taskapp-frontend:github .
 
 FROM node:18-alpine AS build
-ARG GIT_REPO
-ARG GIT_REF=main
+ARG GIT_REPO=https://github.com/Kaalenco/k8s-taskapp.git
+ARG GIT_REF=trunk
 
 RUN apk add --no-cache git
 WORKDIR /app
