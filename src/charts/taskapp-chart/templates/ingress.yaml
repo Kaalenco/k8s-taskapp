@@ -9,34 +9,32 @@ metadata:
   labels:
     app: taskapp
   annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
   tls:
   - hosts:
-    - taskapp.local
-    secretName: taskapp-tls
+    {{- range .Values.ingress.tls.hosts }}
+    - {{ . }}
+    {{- end }}
+    secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
   rules:
-  - host: taskapp.local
+  {{- range .Values.ingress.hosts }}
+  - host: {{ .host }}
     http:
       paths:
-      - path: /
-        pathType: Prefix
+      {{- range .paths }}
+      - path: {{ .path }}
+        pathType: {{ .pathType }}
         backend:
           service:
-            name: frontend
+            name: {{ .service }}
             port:
-              number: 80
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: backend
-            port:
-              number: 80
+              number: {{ .port }}
+      {{- end }}
+  {{- end }}
 {{- end }}

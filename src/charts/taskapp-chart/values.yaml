@@ -249,6 +249,9 @@ ingress:
 
   # Annotations for ingress controller
   annotations:
+    # Do NOT add force-ssl-redirect here when an external load balancer (e.g. UpCloud LB)
+    # terminates TLS — the LB forwards plain HTTP to the ingress controller, so
+    # force-ssl-redirect would cause an infinite redirect loop.
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
@@ -256,12 +259,15 @@ ingress:
 
   # Hostname configuration
   hosts:
-    - host: taskapp.local
+    - host: lb-0a9ae9a872574b6eaf91a32c0518e016-1.upcloudlb.com
       paths:
         - path: /
           pathType: Prefix
-          # Service to route to (frontend)
           service: frontend
+          port: 80
+        - path: /api
+          pathType: Prefix
+          service: backend
           port: 80
 
   # TLS configuration
