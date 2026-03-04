@@ -55,6 +55,8 @@ spec:
               key: mysql-password
         - name: MYSQL_TASKAPP_CONNECTION
           value: "Server=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);User=$(DB_USER);Password=$(DB_PASSWORD);"
+        - name: ASPNETCORE_URLS
+          value: "http://+:5000"
         resources:
           {{- toYaml .Values.backend.resources | nindent 10 }}
         livenessProbe:
