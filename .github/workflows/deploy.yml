@@ -52,7 +52,7 @@ env:
   DOCKER_REGISTRY: docker.io  # Or: ghcr.io, <account>.azurecr.io, etc.
   BACKEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-backend
   FRONTEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-frontend
-  HELM_CHART_PATH: ./charts/taskapp
+  HELM_CHART_PATH: ./src/charts/taskapp-chart
   KUBERNETES_NAMESPACE: taskapp
 
 # Jobs:
