@@ -1,0 +1,451 @@
+# GitHub Actions CI/CD Workflow
+# Session 18: CI/CD and Production Operations
+#
+# This workflow automates the build and deployment of TaskApp.
+#
+# What is CI/CD?
+# CI (Continuous Integration):
+# - Automatically build and test code on every commit
+# - Catch bugs early
+# - Ensure code quality
+#
+# CD (Continuous Deployment):
+# - Automatically deploy to Kubernetes after successful build
+# - Fast releases (multiple times per day)
+# - Consistent deployments
+#
+# GitHub Actions:
+# - Native CI/CD for GitHub repositories
+# - YAML-based workflow definition
+# - Runs in GitHub-hosted or self-hosted runners
+# - Free for public repos, limited minutes for private
+#
+# This Workflow:
+# 1. Triggered on push to trunk branch
+# 2. Builds Docker image for backend    } in parallel
+# 3. Builds Docker image for frontend   }
+# 4. Deploys both to Kubernetes using Helm
+# 5. Notifies on success/failure
+#
+# File Location:
+# Save as: .github/workflows/deploy.yaml
+# (in your Git repository)
+
+name: Build and Deploy TaskApp
+
+# Triggers:
+# - Push to trunk branch
+# - Pull request to trunk (for testing)
+# - Manual trigger (workflow_dispatch)
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+  workflow_dispatch:
+    # Allows manual trigger from GitHub Actions UI
+
+# Environment variables used across jobs
+env:
+  DOCKER_REGISTRY: docker.io  # Or: ghcr.io, <account>.azurecr.io, etc.
+  BACKEND_IMAGE_NAME: taskapp-backend
+  FRONTEND_IMAGE_NAME: taskapp-frontend
+  HELM_CHART_PATH: ./charts/taskapp
+  KUBERNETES_NAMESPACE: taskapp
+
+# Jobs:
+# build-backend and build-frontend run in parallel.
+# deploy waits for both. notify always runs last.
+jobs:
+  # Job 1: Build and Push Backend Docker Image
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest  # GitHub-hosted runner
+
+    # Outputs: Pass data to other jobs
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+      # Clones repository to runner
+
+    # Step 2: Set up Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      # Enhanced Docker build with caching
+
+    # Step 3: Login to container registry
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Secrets stored in GitHub Settings → Secrets
+
+    # Alternative: Login to GitHub Container Registry
+    # - name: Login to GHCR
+    #   uses: docker/login-action@v3
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ github.actor }}
+    #     password: ${{ secrets.GITHUB_TOKEN }}
+
+    # Alternative: Login to Azure Container Registry
+    # - name: Login to ACR
+    #   uses: azure/docker-login@v1
+    #   with:
+    #     login-server: myregistry.azurecr.io
+    #     username: ${{ secrets.ACR_USERNAME }}
+    #     password: ${{ secrets.ACR_PASSWORD }}
+
+    # Step 4: Generate image metadata (tags, labels)
+    - name: Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+      # Generates tags:
+      # - trunk (branch name)
+      # - pr-123 (PR number)
+      # - v1.2.3 (semantic version)
+      # - trunk-abc1234 (branch + commit SHA)
+      # - latest (if trunk branch)
+
+    # Step 5: Build and push Docker image
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/TaskApp.Api  # Path to backend source
+        file: ./src/TaskApp.Api/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha  # Use GitHub Actions cache
+        cache-to: type=gha,mode=max
+
+    # Step 6: Scan image for vulnerabilities
+    - name: Scan image with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+      # Trivy scans for CVEs (Common Vulnerabilities and Exposures)
+
+    # Step 7: Upload scan results to GitHub Security
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+      # View results in GitHub Security tab
+
+  # Job 2: Build and Push Frontend Docker Image (runs in parallel with Job 1)
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Step 2: Set up Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # Step 3: Login to container registry
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Step 4: Generate image metadata (tags, labels)
+    - name: Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    # Step 5: Build and push Docker image
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/TaskApp.Frontend  # Path to frontend source
+        file: ./src/TaskApp.Frontend/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    # Step 6: Scan image for vulnerabilities
+    - name: Scan image with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results-frontend.sarif'
+
+    # Step 7: Upload scan results to GitHub Security
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results-frontend.sarif'
+
+  # Job 3: Deploy to Kubernetes (waits for both build jobs)
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]  # Waits for both builds to succeed
+    # Only deploy on push to trunk (not PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/trunk'
+
+    steps:
+    # Step 1: Checkout code (for Helm charts)
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Step 2: Install kubectl
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    # Step 3: Install Helm
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'latest'
+
+    # Step 4: Configure kubectl (set kubeconfig)
+    - name: Configure kubectl
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+      # KUBECONFIG secret contains base64-encoded kubeconfig file
+      # To create: cat ~/.kube/config | base64 | pbcopy
+      # Add to GitHub Secrets as KUBECONFIG
+
+    # Alternative: Azure AKS
+    # - name: Azure Login
+    #   uses: azure/login@v1
+    #   with:
+    #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+    #
+    # - name: Set AKS context
+    #   uses: azure/aks-set-context@v3
+    #   with:
+    #     resource-group: my-rg
+    #     cluster-name: my-aks
+
+    # Alternative: AWS EKS
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v4
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: us-east-1
+    #
+    # - name: Update kubeconfig for EKS
+    #   run: aws eks update-kubeconfig --name my-eks-cluster
+
+    # Step 5: Create namespace if doesn't exist
+    - name: Create namespace
+      run: |
+        kubectl create namespace ${{ env.KUBERNETES_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+    # Step 6: Deploy with Helm
+    - name: Deploy with Helm
+      run: |
+        helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
+          --install \
+          --namespace ${{ env.KUBERNETES_NAMESPACE }} \
+          --set backend.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}" \
+          --set frontend.image.repository="${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}" \
+          --set frontend.image.tag="${{ github.sha }}" \
+          --wait \
+          --timeout 5m
+      # --install: Install if doesn't exist
+      # --set: Override values
+      # --wait: Wait for pods to be ready
+      # --timeout: Max wait time
+      #
+      # backend.image is a flat "repository:tag" string (matches the backend Helm template).
+      # frontend.image.repository and frontend.image.tag are set separately
+      # (matches the frontend Helm template which uses them independently).
+
+    # Step 7: Verify deployment
+    - name: Verify deployment
+      run: |
+        kubectl rollout status deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }}
+        kubectl rollout status deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }}
+        kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }}
+
+    # Step 8: Run smoke tests (optional)
+    - name: Smoke test
+      run: |
+        kubectl run test --image=curlimages/curl --rm -i --restart=Never -- \
+          curl -f http://backend.${{ env.KUBERNETES_NAMESPACE }}.svc.cluster.local/health
+      # Simple health check
+      # In production, run comprehensive test suite
+
+  # Job 4: Notify on completion
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend, deploy]
+    if: always()  # Run even if previous jobs fail
+
+    steps:
+    # Notify Discord
+    # Uses sarisia/actions-status-discord which produces a colour-coded embed:
+    #   green  = success
+    #   red    = failure
+    #   yellow = cancelled
+    # The status reflects the Deploy job result so a build-only failure is
+    # reported accurately even though Notify always runs.
+    - name: Discord notification
+      uses: sarisia/actions-status-discord@v1
+      with:
+        webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        status: ${{ needs.deploy.result }}
+        title: "TaskApp Deployment"
+        description: |
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+      # To create the webhook:
+      # Discord → channel gear icon → Integrations → Webhooks → New Webhook → Copy Webhook URL
+      # Add to GitHub as repository secret: DISCORD_WEBHOOK_URL
+
+# Required GitHub Secrets:
+# (Add in GitHub Settings → Secrets and variables → Actions)
+#
+# DOCKER_USERNAME:      Docker Hub username (or registry username)
+# DOCKER_PASSWORD:      Docker Hub password or access token
+# KUBECONFIG:           Base64-encoded kubeconfig (see create-cicd-serviceaccount.sh)
+# DISCORD_WEBHOOK_URL:  Discord webhook URL for deployment notifications (optional)
+#
+# To create DISCORD_WEBHOOK_URL:
+#   Discord → channel gear icon → Integrations → Webhooks → New Webhook → Copy Webhook URL
+
+# Workflow Features:
+#
+# Caching:
+# - Docker layer caching (cache-from/cache-to)
+# - Dependency caching (actions/cache)
+# - Speeds up builds significantly
+#
+# Parallel jobs:
+# - Build Backend and Build Frontend run simultaneously
+# - Deploy waits for both (needs: [build-backend, build-frontend])
+#
+# Conditionals:
+# - if: github.ref == 'refs/heads/trunk' (only trunk branch)
+# - if: github.event_name == 'pull_request' (only PRs)
+#
+# Matrix builds:
+# - Build for multiple architectures (amd64, arm64)
+# - Test on multiple Kubernetes versions
+#
+# Manual approval:
+# - environment: production (requires manual approval)
+# - GitHub Settings → Environments → production → Required reviewers
+
+# Production Enhancements:
+#
+# 1. Separate workflows for different environments:
+#    - .github/workflows/deploy-dev.yaml
+#    - .github/workflows/deploy-staging.yaml
+#    - .github/workflows/deploy-prod.yaml
+#
+# 2. Use environment-specific secrets:
+#    - KUBECONFIG_DEV
+#    - KUBECONFIG_STAGING
+#    - KUBECONFIG_PROD
+#
+# 3. Add approval gates for production:
+#    environment:
+#      name: production
+#      url: https://taskapp.example.com
+#
+# 4. Implement canary deployments:
+#    - Deploy to 10% of pods
+#    - Monitor metrics
+#    - Rollout to 100% if healthy
+#
+# 5. Add rollback on failure:
+#    - if: failure()
+#      run: helm rollback taskapp -n taskapp
+#
+# 6. Comprehensive testing:
+#    - Unit tests (npm test)
+#    - Integration tests (API tests)
+#    - E2E tests (Selenium, Cypress)
+#    - Load tests (k6, JMeter)
+#
+# 7. Security scanning:
+#    - Trivy (vulnerabilities)
+#    - Snyk (dependencies)
+#    - SonarQube (code quality)
+#    - OWASP ZAP (penetration testing)
+
+# Troubleshooting:
+#
+# Build fails:
+# - Check Dockerfile syntax
+# - Verify context path (./backend or ./frontend)
+# - Check build logs in GitHub Actions
+#
+# Push fails:
+# - Verify DOCKER_USERNAME and DOCKER_PASSWORD secrets
+# - Check registry authentication
+# - Ensure image name is correct
+#
+# Deploy fails:
+# - Verify KUBECONFIG secret is correct
+# - Check cluster connectivity
+# - Verify namespace exists
+# - Check Helm chart syntax
+#
+# Pods not ready:
+# - Check pod logs: kubectl logs -n taskapp <pod-name>
+# - Check events: kubectl get events -n taskapp
+# - Verify image exists in registry
+# - Check resource limits
+
+# Best Practices:
+# 1. Use semantic versioning for tags
+# 2. Scan images for vulnerabilities
+# 3. Test before deploying (PR builds)
+# 4. Use environment-specific configs
+# 5. Implement rollback strategies
+# 6. Monitor deployments
+# 7. Notify team of status
+# 8. Use secrets for sensitive data
+# 9. Cache dependencies and layers
+# 10. Document workflow in README
