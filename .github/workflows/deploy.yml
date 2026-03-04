@@ -127,7 +127,7 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v5
       with:
-        context: ./src/TaskApp.Api  # Path to backend source
+        context: ./src  # Must include sibling TaskApp.Api.Data project
         file: ./src/TaskApp.Api/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}

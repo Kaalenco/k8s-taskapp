@@ -2,13 +2,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy project file and restore dependencies
-COPY TaskApp.Api.csproj .
-RUN dotnet restore
+# Copy project files and restore (build context is ./src, covering all projects)
+COPY TaskApp.Api.Data/TaskApp.Api.Data.csproj TaskApp.Api.Data/
+COPY TaskApp.Api/TaskApp.Api.csproj TaskApp.Api/
+RUN dotnet restore TaskApp.Api/TaskApp.Api.csproj
 
 # Copy source code and build
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
+COPY TaskApp.Api.Data/ TaskApp.Api.Data/
+COPY TaskApp.Api/ TaskApp.Api/
+RUN dotnet publish TaskApp.Api/TaskApp.Api.csproj -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
