@@ -69,6 +69,7 @@ jobs:
     # Outputs: Pass data to other jobs
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
+      image-version: ${{ steps.meta.outputs.version }}
 
     steps:
     # Step 1: Checkout code
@@ -164,6 +165,7 @@ jobs:
 
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
+      image-version: ${{ steps.meta.outputs.version }}
 
     steps:
     # Step 1: Checkout code
@@ -292,9 +294,9 @@ jobs:
         helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
           --install \
           --namespace ${{ env.KUBERNETES_NAMESPACE }} \
-          --set backend.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}" \
+          --set backend.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ needs.build-backend.outputs.image-version }}" \
           --set frontend.image.repository="${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}" \
-          --set frontend.image.tag="${{ github.sha }}" \
+          --set frontend.image.tag="${{ needs.build-frontend.outputs.image-version }}" \
           --wait \
           --timeout 5m
       # --install: Install if doesn't exist
