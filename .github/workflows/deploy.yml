@@ -75,6 +75,8 @@ jobs:
     # Step 1: Checkout code
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # <-- Your PAT with repo scope
       # Clones repository to runner
 
     # Step 2: Set up Docker Buildx
@@ -171,6 +173,8 @@ jobs:
     # Step 1: Checkout code
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # <-- Your PAT with repo scope
 
     # Step 2: Set up Docker Buildx
     - name: Set up Docker Buildx
@@ -237,6 +241,8 @@ jobs:
     # Step 1: Checkout code (for Helm charts)
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # <-- Your PAT with repo scope
 
     # Step 2: Install kubectl
     - name: Install kubectl
