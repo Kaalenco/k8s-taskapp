@@ -31,7 +31,7 @@ spec:
         image: "{{ .Values.backend.image }}"
         imagePullPolicy: {{ .Values.backend.imagePullPolicy | default "IfNotPresent" }}
         ports:
-        - containerPort: 5000
+        - containerPort: 5073
           name: http
         env:
         - name: DB_HOST
@@ -55,20 +55,18 @@ spec:
               key: mysql-password
         - name: MYSQL_TASKAPP_CONNECTION
           value: "Server=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);User=$(DB_USER);Password=$(DB_PASSWORD);"
-        - name: ASPNETCORE_URLS
-          value: "http://+:5000"
         resources:
           {{- toYaml .Values.backend.resources | nindent 10 }}
         livenessProbe:
           httpGet:
             path: /health
-            port: 5000
+            port: 5073
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /ready
-            port: 5000
+            port: 5073
           initialDelaySeconds: 5
           periodSeconds: 10
 {{- end }}

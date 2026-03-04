@@ -6,7 +6,8 @@ using TaskApp.Api;
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { Args = args });
 
 // HTTP server — Kestrel is the default cross-platform web server
-builder.WebHost.UseKestrelCore();
+// UseKestrel (not UseKestrelCore) is required to read ASPNETCORE_URLS from environment
+builder.WebHost.UseKestrel();
 
 // Configuration sources, in ascending priority order
 builder.Configuration
