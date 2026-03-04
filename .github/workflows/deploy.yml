@@ -50,8 +50,8 @@ on:
 # Environment variables used across jobs
 env:
   DOCKER_REGISTRY: docker.io  # Or: ghcr.io, <account>.azurecr.io, etc.
-  BACKEND_IMAGE_NAME: taskapp-backend
-  FRONTEND_IMAGE_NAME: taskapp-frontend
+  BACKEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-backend
+  FRONTEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-frontend
   HELM_CHART_PATH: ./charts/taskapp
   KUBERNETES_NAMESPACE: taskapp
 
