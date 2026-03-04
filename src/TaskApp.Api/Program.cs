@@ -6,8 +6,15 @@ using TaskApp.Api;
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { Args = args });
 
 // HTTP server — Kestrel is the default cross-platform web server
-// UseKestrel (not UseKestrelCore) is required to read ASPNETCORE_URLS from environment
-builder.WebHost.UseKestrel();
+// CreateEmptyBuilder does not wire up ASPNETCORE_URLS automatically, so the
+// listen address must be configured explicitly. ListenAnyIP binds to 0.0.0.0
+// so Kubernetes liveness/readiness probes can reach the pod IP.
+builder.WebHost.UseKestrelCore();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    var port = int.Parse(Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORT") ?? "5073");
+    options.ListenAnyIP(port);
+});
 
 // Configuration sources, in ascending priority order
 builder.Configuration
