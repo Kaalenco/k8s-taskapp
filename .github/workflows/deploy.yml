@@ -213,7 +213,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}
         tags: |
           type=ref,event=branch
           type=ref,event=pr
@@ -245,7 +245,7 @@ jobs:
       with:
         # Use the tag that was actually pushed (e.g. trunk-a3ffbbd), not github.sha
         # (the full 40-char SHA was never used as a tag and will not be found in the registry).
-        image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+        image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}:${{ steps.meta.outputs.version }}
         format: 'sarif'
         output: 'trivy-results.sarif'
       # Trivy scans for CVEs (Common Vulnerabilities and Exposures)
