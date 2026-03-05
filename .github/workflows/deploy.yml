@@ -51,6 +51,7 @@ on:
 env:
   DOCKER_REGISTRY: docker.io  # Or: ghcr.io, <account>.azurecr.io, etc.
   BACKEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-backend
+  BACKEND_INIT_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-init
   FRONTEND_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/taskapp-frontend
   HELM_CHART_PATH: ./src/charts/taskapp-chart
   KUBERNETES_NAMESPACE: taskapp
@@ -158,6 +159,106 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
       # View results in GitHub Security tab
+
+  # Job 1a: Build and Push Backend init Docker Image
+  build-backend-init:
+    name: Build Backend Database migration Image
+    runs-on: ubuntu-latest  # GitHub-hosted runner
+    permissions:
+      security-events: write  # required to upload SARIF results to GitHub Code Scanning
+
+    # Outputs: Pass data to other jobs
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-version: ${{ steps.meta.outputs.version }}
+
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # <-- Your PAT with repo scope
+      # Clones repository to runner
+
+    # Step 2: Set up Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      # Enhanced Docker build with caching
+
+    # Step 3: Login to container registry
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Secrets stored in GitHub Settings → Secrets
+
+    # Alternative: Login to GitHub Container Registry
+    # - name: Login to GHCR
+    #   uses: docker/login-action@v3
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ github.actor }}
+    #     password: ${{ secrets.GITHUB_TOKEN }}
+
+    # Alternative: Login to Azure Container Registry
+    # - name: Login to ACR
+    #   uses: azure/docker-login@v1
+    #   with:
+    #     login-server: myregistry.azurecr.io
+    #     username: ${{ secrets.ACR_USERNAME }}
+    #     password: ${{ secrets.ACR_PASSWORD }}
+
+    # Step 4: Generate image metadata (tags, labels)
+    - name: Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+      # Generates tags:
+      # - trunk (branch name)
+      # - pr-123 (PR number)
+      # - v1.2.3 (semantic version)
+      # - trunk-abc1234 (branch + commit SHA)
+      # - latest (if trunk branch)
+
+    # Step 5: Build and push Docker image
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src  # Must include sibling TaskApp.Api.Data project
+        file: ./src/TaskApp.Db/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha  # Use GitHub Actions cache
+        cache-to: type=gha,mode=max
+
+    # Step 6: Scan image for vulnerabilities
+    - name: Scan image with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        # Use the tag that was actually pushed (e.g. trunk-a3ffbbd), not github.sha
+        # (the full 40-char SHA was never used as a tag and will not be found in the registry).
+        image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+      # Trivy scans for CVEs (Common Vulnerabilities and Exposures)
+
+    # Step 7: Upload scan results to GitHub Security
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v4
+      continue-on-error: true  # Requires public repo or GitHub Advanced Security
+      with:
+        sarif_file: 'trivy-results.sarif'
+      # View results in GitHub Security tab 
 
   # Job 2: Build and Push Frontend Docker Image (runs in parallel with Job 1)
   build-frontend:
@@ -307,6 +408,7 @@ jobs:
         helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
           --install \
           --namespace ${{ env.KUBERNETES_NAMESPACE }} \
+          --set backend-init.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}:${{ needs.build-backend-init.outputs.image-version }}" \
           --set backend.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ needs.build-backend.outputs.image-version }}" \
           --set frontend.image.repository="${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}" \
           --set frontend.image.tag="${{ needs.build-frontend.outputs.image-version }}" \
