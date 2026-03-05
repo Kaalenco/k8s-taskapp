@@ -7,14 +7,12 @@ metadata:
   name: frontend
   namespace: {{ .Release.Namespace }}
   labels:
-    app: frontend
-    tier: presentation
+    {{- include "taskapp.componentLabels" (dict "component" "frontend" "context" .) | nindent 4 }}
 spec:
   replicas: {{ .Values.frontend.replicaCount | default 2 }}
   selector:
     matchLabels:
-      app: frontend
-      tier: presentation
+      {{- include "taskapp.componentSelectorLabels" (dict "component" "frontend" "context" .) | nindent 6 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,8 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        app: frontend
-        tier: presentation
+        {{- include "taskapp.componentSelectorLabels" (dict "component" "frontend" "context" .) | nindent 8 }}
     spec:
       containers:
       - name: frontend

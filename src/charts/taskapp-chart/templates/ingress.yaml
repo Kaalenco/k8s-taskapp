@@ -7,7 +7,7 @@ metadata:
   name: taskapp-ingress
   namespace: {{ .Release.Namespace }}
   labels:
-    app: taskapp
+    {{- include "taskapp.labels" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}

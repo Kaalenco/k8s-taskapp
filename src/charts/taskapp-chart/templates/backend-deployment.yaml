@@ -7,14 +7,12 @@ metadata:
   name: backend
   namespace: {{ .Release.Namespace }}
   labels:
-    app: backend
-    tier: api
+    {{- include "taskapp.componentLabels" (dict "component" "backend" "context" .) | nindent 4 }}
 spec:
   replicas: {{ .Values.backend.replicaCount | default 2 }}
   selector:
     matchLabels:
-      app: backend
-      tier: api
+      {{- include "taskapp.componentSelectorLabels" (dict "component" "backend" "context" .) | nindent 6 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,8 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        app: backend
-        tier: api
+        {{- include "taskapp.componentSelectorLabels" (dict "component" "backend" "context" .) | nindent 8 }}
     spec:
       containers:
       - name: backend-api

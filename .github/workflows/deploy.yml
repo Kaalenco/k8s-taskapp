@@ -336,7 +336,8 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend]  # Waits for both builds to succeed
+    needs: [build-backend, build-backend-init, build-frontend]  
+    # Waits for all builds to succeed
     # Deploy on push to trunk, or manual trigger (workflow_dispatch) from trunk.
     # Pull requests are excluded — they build and scan but never deploy.
     if: github.ref == 'refs/heads/trunk' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -393,7 +394,14 @@ jobs:
     # - name: Update kubeconfig for EKS
     #   run: aws eks update-kubeconfig --name my-eks-cluster
 
-    # Step 5: Create namespace if doesn't exist
+    # Step 5: Set chart version (format: 1.YYDDD.BUILD)
+    - name: Set chart version
+      run: |
+        CHART_VERSION="1.$(date +%y%j).${{ github.run_number }}"
+        sed -i "s/^version:.*/version: ${CHART_VERSION}/" ${{ env.HELM_CHART_PATH }}/Chart.yaml
+        echo "Chart version: ${CHART_VERSION}"
+
+    # Step 6: Create namespace if doesn't exist
     - name: Create namespace
       run: |
         kubectl get namespace ${{ env.KUBERNETES_NAMESPACE }} >/dev/null 2>&1 || \
@@ -402,13 +410,13 @@ jobs:
       # which can fail if the API server is behind a firewall or load balancer with
       # restricted access. Using get-or-create avoids that preflight entirely.
 
-    # Step 6: Deploy with Helm
+    # Step 7: Deploy with Helm
     - name: Deploy with Helm
       run: |
         helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
           --install \
           --namespace ${{ env.KUBERNETES_NAMESPACE }} \
-          --set backendinit.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}:${{ needs.build-backend-init.outputs.image-version }}" \
+          --set migrations.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}:${{ needs.build-backend-init.outputs.image-version }}" \
           --set backend.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ needs.build-backend.outputs.image-version }}" \
           --set frontend.image.repository="${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}" \
           --set frontend.image.tag="${{ needs.build-frontend.outputs.image-version }}" \
@@ -423,14 +431,14 @@ jobs:
       # frontend.image.repository and frontend.image.tag are set separately
       # (matches the frontend Helm template which uses them independently).
 
-    # Step 7: Verify deployment
+    # Step 8: Verify deployment
     - name: Verify deployment
       run: |
         kubectl rollout status deployment/backend -n ${{ env.KUBERNETES_NAMESPACE }}
         kubectl rollout status deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }}
         kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }}
 
-    # Step 8: Run smoke tests (optional)
+    # Step 9: Run smoke tests (optional)
     - name: Smoke test
       run: |
         kubectl run test --image=curlimages/curl --rm -i --restart=Never -- \
@@ -442,7 +450,7 @@ jobs:
   notify:
     name: Notify Team
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend, deploy]
+    needs: [build-backend, build-backend-init, build-frontend, deploy]
     if: always()  # Run even if previous jobs fail
 
     steps:
@@ -492,8 +500,8 @@ jobs:
 # - Speeds up builds significantly
 #
 # Parallel jobs:
-# - Build Backend and Build Frontend run simultaneously
-# - Deploy waits for both (needs: [build-backend, build-frontend])
+# - Build Backend, Build Backend Init, and Build Frontend run simultaneously
+# - Deploy waits for all (needs: [build-backend, build-backend-init, build-frontend])
 #
 # Conditionals:
 # - if: github.ref == 'refs/heads/trunk' (only trunk branch)

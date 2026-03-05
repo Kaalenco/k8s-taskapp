@@ -7,8 +7,7 @@ metadata:
   name: frontend
   namespace: {{ .Release.Namespace }}
   labels:
-    app: frontend
-    tier: presentation
+    {{- include "taskapp.componentLabels" (dict "component" "frontend" "context" .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -17,6 +16,5 @@ spec:
     protocol: TCP
     name: http
   selector:
-    app: frontend
-    tier: presentation
+    {{- include "taskapp.componentSelectorLabels" (dict "component" "frontend" "context" .) | nindent 4 }}
 {{- end }}

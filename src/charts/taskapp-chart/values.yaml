@@ -104,7 +104,16 @@ migrations:
   # Migrations image configuration
   image: "taskapp-init:latest"
   imagePullPolicy: Always
-  
+
+  # add a hook so the migrations lifecycle is managed separately from the backend deployment
+  # before-hook-creation deletes the previous Job before creating a new one, so upgrades work cleanly. 
+  # This also means migrations run on every upgrade — which is correct behavior since migrations 
+  # are idempotent by design.
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+
 # Backend API tier configuration
 backend:
   # Enable/disable backend deployment

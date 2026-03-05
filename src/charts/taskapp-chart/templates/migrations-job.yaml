@@ -7,9 +7,9 @@ metadata:
   name: migrations
   namespace: {{ .Release.Namespace }}
   labels:
-    app: migrations
-    tier: api
+    {{- include "taskapp.componentLabels" (dict "component" "migrations" "context" .) | nindent 4 }}
 spec:
+  ttlSecondsAfterFinished: 120
   template:
     metadata:
       labels:
@@ -20,7 +20,7 @@ spec:
       containers:
       - name: migrations
         image: {{ .Values.migrations.image | quote }}
-        imagePullPolicy: {{ .Values.migrations.imagePullPolicy | quote | default "IfNotPresent" }}
+        imagePullPolicy: {{ .Values.migrations.imagePullPolicy | default "IfNotPresent" }}
         env:
         - name: DB_HOST
           value: {{ include "taskapp.databaseHost" . | quote }}

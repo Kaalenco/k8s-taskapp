@@ -7,8 +7,7 @@ metadata:
   name: mysql
   namespace: {{ .Release.Namespace }}
   labels:
-    app: mysql
-    tier: database
+    {{- include "taskapp.componentLabels" (dict "component" "database" "context" .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -17,6 +16,5 @@ spec:
     protocol: TCP
     name: mysql
   selector:
-    app: mysql
-    tier: database
+    {{- include "taskapp.componentSelectorLabels" (dict "component" "database" "context" .) | nindent 4 }}
 {{- end }}

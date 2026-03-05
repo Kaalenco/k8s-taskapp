@@ -7,21 +7,18 @@ metadata:
   name: mysql
   namespace: {{ .Release.Namespace }}
   labels:
-    app: mysql
-    tier: database
+    {{- include "taskapp.componentLabels" (dict "component" "database" "context" .) | nindent 4 }}
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: mysql
-      tier: database
+      {{- include "taskapp.componentSelectorLabels" (dict "component" "database" "context" .) | nindent 6 }}
   template:
     metadata:
       labels:
-        app: mysql
-        tier: database
+        {{- include "taskapp.componentSelectorLabels" (dict "component" "database" "context" .) | nindent 8 }}
     spec:
       containers:
       - name: mysql
