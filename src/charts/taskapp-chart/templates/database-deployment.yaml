@@ -51,8 +51,6 @@ spec:
         volumeMounts:
         - name: mysql-data
           mountPath: /var/lib/mysql
-        - name: mysql-init
-          mountPath: /docker-entrypoint-initdb.d
         resources:
           {{- toYaml .Values.database.resources | nindent 10 }}
         livenessProbe:
@@ -77,7 +75,4 @@ spec:
       - name: mysql-data
         persistentVolumeClaim:
           claimName: mysql-pvc
-      - name: mysql-init
-        configMap:
-          name: {{ include "taskapp.fullname" . }}-mysql-init
 {{- end }}
