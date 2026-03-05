@@ -1,13 +1,11 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual 
-# Studio uses this Dockerfile to build your images for faster debugging.
+# =============================================================================
+# TaskApp.Db — EF Core Migration Runner
+# Console application that applies Entity Framework migrations to the database.
+# Runs once and exits (Kubernetes init container or Job), not a long-lived service.
+# =============================================================================
 
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS base
-USER $APP_UID
-WORKDIR /app
+# Build stage
 
-
-# This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
@@ -15,15 +13,30 @@ COPY ["TaskApp.Db/TaskApp.Db.csproj", "TaskApp.Db/"]
 RUN dotnet restore "./TaskApp.Db/TaskApp.Db.csproj"
 COPY . .
 WORKDIR "/src/TaskApp.Db"
+# 'dotnet publish' (in the next stage) already compiles implicitly, making this build step
+# redundant. The /app/build output is not used by any subsequent stage.
+# It is kept here as a fast-fail: if compilation breaks, this stage fails before publish runs.
 RUN dotnet build "./TaskApp.Db.csproj" -c $BUILD_CONFIGURATION -o /app/build
+# -------------------------
+# Result: project compiled in the SDK image with all dependencies restored and binaries in /app/build.
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
+
+# ARGs do not persist across stages and must be redeclared in each stage that needs them.
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./TaskApp.Db.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+# -------------------------
+# Result: self-contained publish output in /app/publish, ready to be copied into the final image.
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
-FROM base AS final
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
 WORKDIR /app
+USER $APP_UID
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "TaskApp.Db.dll"]
+CMD ["--database", "mysql"]
+# -------------------------
+# Result: minimal runtime image with the published app. Defaults to MySQL migrations.
+# Override CMD in the Kubernetes Job/initContainer spec to target a different database,
+# e.g. args: ["--database", "sqlserver"]

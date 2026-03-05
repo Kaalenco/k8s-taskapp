@@ -140,3 +140,51 @@ dotnet run --project src/TaskApp.Db -- --database sqlserver
 The `Dockerfile` builds a minimal image that runs the migration runner once and exits.
 In the Helm chart it is used as an init container, passing `--database mysql` so the
 API pod only starts after MySQL migrations succeed.
+
+### Testing the Docker image locally
+
+Use `run-local.ps1` to build the image and run it against a local MySQL instance in one step.
+The script reads the connection string from the `MYSQL_TASKAPP_CONNECTION` environment variable.
+
+```powershell
+# Set the connection string (once per session, or persist it as a machine/user env var)
+$env:MYSQL_TASKAPP_CONNECTION = "Server=localhost;Port=3306;Database=taskapp;User=root;Password=yourpassword;"
+
+# Build and run
+.\src\TaskApp.Db\run-local.ps1
+```
+
+> **Note:** From inside a Docker container `localhost` refers to the container itself,
+> not your machine. Use `host.docker.internal` in the connection string to reach a
+> database running on the host (Docker Desktop for Windows/Mac resolves this automatically).
+>
+> **If the connection is still refused**, MySQL may be bound to `127.0.0.1` only, which
+> blocks connections from outside the host loopback (including Docker). Verify with:
+> ```powershell
+> netstat -an | Select-String "3306"
+> ```
+> If you see `127.0.0.1:3306` instead of `0.0.0.0:3306`, update `my.ini`
+> (typically `C:\ProgramData\MySQL\MySQL Server 8.0\my.ini`) and set:
+> ```ini
+> [mysqld]
+> bind-address = 0.0.0.0
+> ```
+> Then restart the MySQL service and retry.
+>
+> **If MySQL is listening on `0.0.0.0` but the connection is still refused**, the `root`
+> user is likely restricted to `localhost` only. MySQL user accounts are defined as
+> `user@host`, and Docker connects from a bridge network IP (e.g. `172.x.x.x`) which
+> MySQL treats as a remote connection and rejects.
+>
+> Create a dedicated application user that accepts connections from any host:
+> ```sql
+> CREATE USER 'taskapp'@'%' IDENTIFIED BY 'yourpassword';
+> GRANT ALL PRIVILEGES ON taskapp.* TO 'taskapp'@'%';
+> FLUSH PRIVILEGES;
+> ```
+> Then update the connection string accordingly:
+> ```powershell
+> $env:MYSQL_TASKAPP_CONNECTION = "Server=host.docker.internal;Port=3306;Database=taskapp;User=taskapp;Password=yourpassword;"
+> ```
+> Using a dedicated user with access limited to the `taskapp` database is preferable
+> over granting remote access to `root`.
