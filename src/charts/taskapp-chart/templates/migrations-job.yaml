@@ -17,6 +17,24 @@ spec:
         tier: api
     spec:
       restartPolicy: Never
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox
+        command:
+          - sh
+          - -c
+          - |
+            i=0
+            until nc -z {{ include "taskapp.databaseHost" . }} {{ .Values.database.service.port }}; do
+              i=$((i+1))
+              if [ $i -ge 30 ]; then
+                echo "MySQL not ready after 60s, giving up"
+                exit 1
+              fi
+              echo "Waiting for mysql ($i/30)"
+              sleep 2
+            done
+            echo "MySQL is ready"
       containers:
       - name: migrations
         image: {{ .Values.migrations.image | quote }}
