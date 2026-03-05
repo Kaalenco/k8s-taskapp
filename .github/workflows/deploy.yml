@@ -69,7 +69,6 @@ jobs:
 
     # Outputs: Pass data to other jobs
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
       image-version: ${{ steps.meta.outputs.version }}
 
     steps:
@@ -162,14 +161,13 @@ jobs:
 
   # Job 1a: Build and Push Backend init Docker Image
   build-backend-init:
-    name: Build Backend Database migration Image
+    name: Build Database migration
     runs-on: ubuntu-latest  # GitHub-hosted runner
     permissions:
       security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
     # Outputs: Pass data to other jobs
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
       image-version: ${{ steps.meta.outputs.version }}
 
     steps:
@@ -268,7 +266,6 @@ jobs:
       security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
       image-version: ${{ steps.meta.outputs.version }}
 
     steps:
@@ -360,6 +357,7 @@ jobs:
       uses: azure/setup-helm@v3
       with:
         version: 'latest'
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     # Step 4: Configure kubectl (set kubeconfig)
     - name: Configure kubectl
@@ -410,7 +408,12 @@ jobs:
       # which can fail if the API server is behind a firewall or load balancer with
       # restricted access. Using get-or-create avoids that preflight entirely.
 
-    # Step 7: Deploy with Helm
+    # Step 7a: Delete deployments to allow selector label change
+    - name: Delete deployments for selector migration
+      run: |
+        kubectl delete deployment backend frontend mysql -n ${{ env.KUBERNETES_NAMESPACE }} --ignore-not-found
+
+    # Step 7b: Deploy with Helm
     - name: Deploy with Helm
       run: |
         helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
