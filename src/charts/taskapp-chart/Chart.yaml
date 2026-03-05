@@ -103,6 +103,8 @@ annotations:
   images: |
     - name: mysql
       image: mysql:8.0
+    - name: migrations
+      image: taskapp-init:latest
     - name: backend
       image: taskapp-backend:latest
     - name: frontend

@@ -408,7 +408,7 @@ jobs:
         helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
           --install \
           --namespace ${{ env.KUBERNETES_NAMESPACE }} \
-          --set backend-init.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}:${{ needs.build-backend-init.outputs.image-version }}" \
+          --set backendinit.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_INIT_NAME }}:${{ needs.build-backend-init.outputs.image-version }}" \
           --set backend.image="${{ env.DOCKER_REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ needs.build-backend.outputs.image-version }}" \
           --set frontend.image.repository="${{ env.DOCKER_REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}" \
           --set frontend.image.tag="${{ needs.build-frontend.outputs.image-version }}" \

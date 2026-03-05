@@ -96,6 +96,15 @@ database:
     failureThreshold: 3
     successThreshold: 1
 
+
+# Backend initializer (migrations) configuration
+migrations:
+  # Enable/disable migrations job
+  enabled: true
+  # Migrations image configuration
+  image: "taskapp-init:latest"
+  imagePullPolicy: Always
+  
 # Backend API tier configuration
 backend:
   # Enable/disable backend deployment

@@ -1,0 +1,46 @@
+
+{{- if .Values.migrations.enabled }}
+# Backend Initializer (migrations) job template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrations
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: migrations
+    tier: api
+spec:
+  template:
+    metadata:
+      labels:
+        app: migrations
+        tier: api
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrations
+        image: {{ .Values.migrations.image | quote }}
+        imagePullPolicy: {{ .Values.migrations.imagePullPolicy | quote | default "IfNotPresent" }}
+        env:
+        - name: DB_HOST
+          value: {{ include "taskapp.databaseHost" . | quote }}
+        - name: DB_PORT
+          value: {{ .Values.database.service.port | quote }}
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-database
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        - name: MYSQL_TASKAPP_CONNECTION
+          value: "Server=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);User=$(DB_USER);Password=$(DB_PASSWORD);"
+{{- end }}
