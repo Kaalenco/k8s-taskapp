@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
 using TaskApp.Api.Data;
 
-namespace TaskApp.Api;
+namespace TaskApp.Application;
 
-internal static class DatabaseServiceProvider
+public static class DatabaseServiceProvider
 {
-    internal static IServiceCollection AddDatabase(
+    public static IServiceCollection AddDatabase(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -13,10 +16,10 @@ internal static class DatabaseServiceProvider
 
         var connectionString = dbProvider switch
         {
-            "mysql"     => configuration.GetValue<string>("MYSQL_TASKAPP_CONNECTION")
-                           ?? configuration.GetConnectionString("MySqlConnection"),
+            "mysql" => configuration.GetValue<string>("MYSQL_TASKAPP_CONNECTION")
+                ?? configuration.GetConnectionString("MySqlConnection"),
             "sqlserver" => configuration.GetValue<string>("SQLSERVER_TASKAPP_CONNECTION")
-                           ?? configuration.GetConnectionString("SqlServerConnection"),
+                ?? configuration.GetConnectionString("SqlServerConnection"),
             _ => throw new InvalidOperationException(
                 $"'Database:Provider' must be 'mysql' or 'sqlserver' (was '{dbProvider}'). " +
                 "Set it in appsettings.json or via the Database__Provider environment variable.")

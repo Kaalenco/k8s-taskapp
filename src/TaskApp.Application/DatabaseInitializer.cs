@@ -1,11 +1,14 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 using TaskApp.Api.Data;
 using TaskApp.Api.Data.Models;
 
-namespace TaskApp.Api;
+namespace TaskApp.Application;
 
-internal static class DatabaseInitializer
+public static class DatabaseInitializer
 {
-    internal static void Initialize(IServiceProvider services)
+    public static void Initialize(IServiceProvider services)
     {
         using var scope = services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<TaskDbContext>();

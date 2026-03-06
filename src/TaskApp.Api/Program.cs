@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using TaskApp.Api.Data;
 using Scalar.AspNetCore;
-using TaskApp.Api;
+using TaskApp.Application;
 
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { Args = args });
 

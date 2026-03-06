@@ -1,0 +1,41 @@
+# Integration Test Compose File
+#
+# Spins up a temporary MySQL instance, runs integration tests against it,
+# then removes everything (--volumes removes the DB data).
+#
+# Usage:
+#   docker compose -f src/docker-compose.integration.yml up \
+#     --build --exit-code-from integration-tests --abort-on-container-exit
+#   docker compose -f src/docker-compose.integration.yml down --volumes
+#
+# The exit code mirrors the test result: 0 = all pass, non-zero = failure.
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: testroot
+      MYSQL_DATABASE: taskapp_test
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptestroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  integration-tests:
+    build:
+      context: .                                          # ./src relative to this file
+      dockerfile: TaskApp.UnitTests/Dockerfile.integration
+    environment:
+      # Matches what TaskApp.Application reads for MySQL
+      ConnectionStrings__DefaultConnection: >-
+        Server=mysql;Database=taskapp_test;
+        User=testuser;Password=testpass;
+        Connection Timeout=30;
+    depends_on:
+      mysql:
+        condition: service_healthy

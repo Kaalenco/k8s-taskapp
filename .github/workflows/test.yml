@@ -1,0 +1,84 @@
+# Test Workflow
+#
+# Runs on every push and pull request to any branch.
+# Two jobs run in parallel:
+#
+#   unit-tests        — dotnet test filtering out [Category("Integration")] tests.
+#                       Fast, no external dependencies.
+#
+#   integration-tests — docker compose brings up MySQL, runs only
+#                       [Category("Integration")] tests, then tears down the DB.
+#
+# How to annotate tests:
+#   Unit test (default)    — no annotation needed
+#   Integration test       — [Category("Integration")] on the class or method
+#
+# Filter used:
+#   unit tests        dotnet test --filter "TestCategory!=Integration"
+#   integration tests dotnet test --filter "TestCategory=Integration"  (inside Docker)
+
+name: Run Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  # ── Unit Tests ────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.x'
+
+    - name: Restore
+      run: dotnet restore src/TaskApp.sln
+
+    - name: Build
+      run: dotnet build src/TaskApp.sln --no-restore
+
+    - name: Run unit tests
+      run: |
+        dotnet test src/TaskApp.UnitTests/TaskApp.UnitTests.csproj \
+          --no-build \
+          --filter "TestCategory!=Integration" \
+          --logger "trx;LogFileName=unit-test-results.trx" \
+          --results-directory ./TestResults
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()   # upload even on failure so results are visible
+      with:
+        name: unit-test-results
+        path: ./TestResults/*.trx
+
+  # ── Integration Tests (MySQL via Docker Compose) ──────────────────────────
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run integration tests
+      # --build    rebuilds the test image so code changes are picked up
+      # --exit-code-from  propagates the test container's exit code
+      # --abort-on-container-exit  stops all services once tests finish
+      run: |
+        docker compose -f src/docker-compose.integration.yml up \
+          --build \
+          --exit-code-from integration-tests \
+          --abort-on-container-exit
+
+    - name: Tear down MySQL
+      if: always()   # remove DB even if tests fail
+      run: docker compose -f src/docker-compose.integration.yml down --volumes
