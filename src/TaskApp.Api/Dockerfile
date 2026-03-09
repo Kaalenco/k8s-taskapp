@@ -17,6 +17,7 @@ RUN dotnet restore TaskApp.Api/TaskApp.Api.csproj
 # Copy source code and build
 COPY TaskApp.Api.Data/ TaskApp.Api.Data/
 COPY TaskApp.Api/ TaskApp.Api/
+COPY TaskApp.Application/ TaskApp.Application/
 RUN dotnet publish TaskApp.Api/TaskApp.Api.csproj -c Release -o /app/publish
 # -------------------------
 # Result: project compiled and published in the SDK image with all dependencies resolved.
