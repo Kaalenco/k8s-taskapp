@@ -8,6 +8,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "taskapp.componentLabels" (dict "component" "migrations" "context" .) | nindent 4 }}
+  {{- with .Values.migrations.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   ttlSecondsAfterFinished: 120
   template:
@@ -39,6 +43,7 @@ spec:
       - name: migrations
         image: {{ .Values.migrations.image | quote }}
         imagePullPolicy: {{ .Values.migrations.imagePullPolicy | default "IfNotPresent" }}
+        args: ["--database", "mysql"]
         env:
         - name: DB_HOST
           value: {{ include "taskapp.databaseHost" . | quote }}
