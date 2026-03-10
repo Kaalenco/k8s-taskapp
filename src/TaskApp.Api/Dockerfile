@@ -12,6 +12,7 @@ WORKDIR /src
 # Copy project files and restore (build context is ./src, covering all projects)
 COPY TaskApp.Api.Data/TaskApp.Api.Data.csproj TaskApp.Api.Data/
 COPY TaskApp.Api/TaskApp.Api.csproj TaskApp.Api/
+COPY TaskApp.Application/TaskApp.Application.csproj TaskApp.Application/
 RUN dotnet restore TaskApp.Api/TaskApp.Api.csproj
 
 # Copy source code and build
