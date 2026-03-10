@@ -65,10 +65,10 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
         if (id != task.Id) return UpdateResult.BadData;
 
         logHelper.ItemModifying(id);
-        var existingTask = task.ToEntityModel();
+        var existingTask = await context.Tasks.FindAsync(id);
         if (existingTask == null) return UpdateResult.BadData;
-        existingTask.UpdatedAt = DateTime.UtcNow;
-        context.Entry(existingTask).State = EntityState.Modified;
+        task.CopyTo(existingTask);
+
         try
         {
             var modified = await context.SaveChangesAsync();

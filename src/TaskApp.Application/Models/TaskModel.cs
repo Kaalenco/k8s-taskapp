@@ -25,6 +25,13 @@ public class TaskModel
         };
     }
 
+    public void CopyTo(Api.Data.Models.TaskItem entity)
+    {
+        entity.Title = Name;
+        entity.Description = Description;
+        entity.UpdatedAt = DateTime.UtcNow;
+    }
+
     public Api.Data.Models.TaskItem ToEntityModel()
     {
         return new Api.Data.Models.TaskItem
