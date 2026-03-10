@@ -41,4 +41,6 @@ CMD ["dotnet", "test", "TaskApp.UnitTests/TaskApp.UnitTests.csproj", \
      "--no-build", \
      "-c", "Release", \
      "--filter", "TestCategory=Integration", \
-     "--logger", "console;verbosity=normal"]
+     "--logger", "console;verbosity=normal", \
+     "--logger", "trx;LogFileName=integration-results.trx", \
+     "--results-directory", "/TestResults"]

@@ -79,6 +79,17 @@ jobs:
           --exit-code-from integration-tests \
           --abort-on-container-exit
 
+    - name: Show integration test output
+      if: always()   # print logs even if tests failed
+      run: docker compose -f src/docker-compose.integration.yml logs integration-tests
+
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: integration-test-results
+        path: src/test-results/*.trx
+
     - name: Tear down MySQL
       if: always()   # remove DB even if tests fail
       run: docker compose -f src/docker-compose.integration.yml down --volumes
