@@ -66,7 +66,7 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
 
         logHelper.ItemModifying(id);
         var existingTask = await context.Tasks.FindAsync(id);
-        if (existingTask == null) return UpdateResult.BadData;
+        if (existingTask == null) return UpdateResult.NotFound;
         task.CopyTo(existingTask);
 
         try
