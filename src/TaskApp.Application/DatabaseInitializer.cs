@@ -16,9 +16,6 @@ public static class DatabaseInitializer
 
         try
         {
-            context.Database.EnsureCreated();
-            logger.LogInformation("Database initialized successfully");
-
             if (!context.Tasks.Any())
             {
                 logger.LogInformation("Seeding database with sample tasks");
@@ -33,7 +30,7 @@ public static class DatabaseInitializer
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while initializing the database");
+            logger.LogError(ex, "Database seeding failed — schema may not be ready yet (migration runner may still be pending)");
         }
     }
 }
