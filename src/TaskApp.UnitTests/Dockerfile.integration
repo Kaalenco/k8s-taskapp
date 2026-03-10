@@ -1,8 +1,7 @@
 # Integration Test Dockerfile
 #
-# Builds the test project at image-build time, then runs integration tests
-# (Category == Integration) at container-start time so the MySQL service
-# is already available via docker compose.
+# Restores at image-build time (layer-cached), then builds + runs integration
+# tests at container-start time so the MySQL service is already available.
 #
 # Used by docker-compose.integration.yml — do not run directly.
 #
@@ -11,9 +10,9 @@
 #
 # To mark a test as an integration test, add:
 #   [Category("Integration")]
-# to the test class or method.
+# to the test method.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0
 WORKDIR /src
 
 # Restore (layer-cached until .csproj files change)
@@ -25,21 +24,12 @@ COPY TaskApp.Api/TaskApp.Api.csproj                 TaskApp.Api/
 COPY TaskApp.Db/TaskApp.Db.csproj                   TaskApp.Db/
 RUN dotnet restore TaskApp.UnitTests/TaskApp.UnitTests.csproj
 
-# Build (do not run tests here — MySQL is not available at build time)
+# Copy source (invalidates cache when code changes)
 COPY . .
-RUN dotnet build TaskApp.UnitTests/TaskApp.UnitTests.csproj \
-    --no-restore \
-    -c Release
 
-# ---- runtime image ----
-FROM mcr.microsoft.com/dotnet/sdk:10.0
-WORKDIR /src
-COPY --from=build /src .
-
-# Run integration tests when the container starts (MySQL must be ready)
+# Build + run integration tests when the container starts (MySQL must be ready)
 CMD ["dotnet", "test", "TaskApp.UnitTests/TaskApp.UnitTests.csproj", \
-     "--no-build", \
-     "-c", "Release", \
+     "--no-restore", \
      "--filter", "TestCategory=Integration", \
      "--logger", "console;verbosity=normal", \
      "--logger", "trx;LogFileName=integration-results.trx", \
