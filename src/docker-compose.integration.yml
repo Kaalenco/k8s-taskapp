@@ -31,11 +31,9 @@ services:
       context: .                                          # ./src relative to this file
       dockerfile: TaskApp.UnitTests/Dockerfile.integration
     environment:
-      # Matches what TaskApp.Application reads for MySQL
-      ConnectionStrings__DefaultConnection: >-
-        Server=mysql;Database=taskapp_test;
-        User=testuser;Password=testpass;
-        Connection Timeout=30;
+      ConnectionStrings__DefaultConnection: "Server=mysql;Database=taskapp_test;User=testuser;Password=testpass;Connection Timeout=30;"
+    volumes:
+      - ./test-results:/TestResults
     depends_on:
       mysql:
         condition: service_healthy
