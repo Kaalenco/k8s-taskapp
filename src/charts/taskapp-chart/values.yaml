@@ -105,13 +105,26 @@ migrations:
   image: "taskapp-init:latest"
   imagePullPolicy: Always
 
-  # add a hook so the migrations lifecycle is managed separately from the backend deployment
-  # before-hook-creation deletes the previous Job before creating a new one, so upgrades work cleanly. 
-  # This also means migrations run on every upgrade — which is correct behavior since migrations 
-  # are idempotent by design.
+  # Helm hook configuration for the migrations Job.
+  #
+  # WHY post-install,post-upgrade (not pre-install,pre-upgrade):
+  #   The migrations job init container waits for MySQL to be reachable before
+  #   running. MySQL is a regular chart resource (not a hook), so it is only
+  #   deployed during the main resource phase. If migrations ran as a pre-hook,
+  #   MySQL would not exist yet, the init container would time out, the hook
+  #   would fail, and Helm would never apply the main resources — meaning MySQL,
+  #   backend, and frontend would never be deployed either.
+  #   Using post-install,post-upgrade ensures all deployments are created first,
+  #   MySQL has time to start, and only then does the migrations job run.
+  #
+  # hook-delete-policy: before-hook-creation
+  #   Deletes the previous Job object before creating the new one, so that
+  #   helm upgrade does not fail on a "resource already exists" conflict.
+  #   This also means migrations run on every install/upgrade — correct
+  #   behavior because EF Core migrations are idempotent.
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": before-hook-creation
 
 # Backend API tier configuration
