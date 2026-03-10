@@ -63,11 +63,12 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
         var logHelper = LoggerHelper.For(logger, nameof(TaskModel));
 
         if (id != task.Id) return UpdateResult.BadData;
+
         logHelper.ItemModifying(id);
         var existingTask = task.ToEntityModel();
         if (existingTask == null) return UpdateResult.BadData;
         existingTask.UpdatedAt = DateTime.UtcNow;
-        context.Entry(task).State = EntityState.Modified;
+        context.Entry(existingTask).State = EntityState.Modified;
         try
         {
             var modified = await context.SaveChangesAsync();
