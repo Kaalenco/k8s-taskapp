@@ -170,7 +170,7 @@ public class UsingTaskDbContextWithTaskService
     {
         var result = await _taskService.UpdateTask(1, new TaskModel { Id = 2, Title = "X" });
 
-        Assert.That(result, Is.EqualTo(UpdateResult.BadData));
+        Assert.That(result.result, Is.EqualTo(UpdateResult.BadData));
     }
 
     [Test]
@@ -179,7 +179,7 @@ public class UsingTaskDbContextWithTaskService
     {
         var result = await _taskService.UpdateTask(99999, new TaskModel { Id = 99999, Title = "Ghost" });
 
-        Assert.That(result, Is.EqualTo(UpdateResult.NotFound));
+        Assert.That(result.result, Is.EqualTo(UpdateResult.NotFound));
     }
 
     [Test]
@@ -191,7 +191,7 @@ public class UsingTaskDbContextWithTaskService
 
         var result = await _taskService.UpdateTask(created.Id, updated);
 
-        Assert.That(result, Is.EqualTo(UpdateResult.Success));
+        Assert.That(result.result, Is.EqualTo(UpdateResult.Success));
         var fetched = await _taskService.GetTask(created.Id);
         Assert.That(fetched!.Title, Is.EqualTo("Updated"));
         Assert.That(fetched.Description, Is.EqualTo("New"));

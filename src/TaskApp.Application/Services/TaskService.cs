@@ -58,15 +58,15 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
         }
     }
 
-    public async Task<UpdateResult> UpdateTask(int id, TaskModel task)
+    public async Task<(UpdateResult result, TaskModel? task)> UpdateTask(int id, TaskModel task)
     {
         var logHelper = LoggerHelper.For(logger, nameof(TaskModel));
 
-        if (id != task.Id) return UpdateResult.BadData;
+        if (id != task.Id) return (UpdateResult.BadData, task);
 
         logHelper.ItemModifying(id);
         var existingTask = await context.Tasks.FindAsync(id);
-        if (existingTask == null) return UpdateResult.NotFound;
+        if (existingTask == null) return (UpdateResult.NotFound, null);
         task.CopyTo(existingTask);
 
         try
@@ -74,22 +74,22 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
             var modified = await context.SaveChangesAsync();
             if (modified == 0)
             {
-                return UpdateResult.NoChanges;
+                return (UpdateResult.NoChanges, TaskModel.FromEntity(existingTask));
             }
             logHelper.ItemModified( id);
-            return UpdateResult.Success;
+            return (UpdateResult.Success, TaskModel.FromEntity(existingTask));
         }
         catch (DbUpdateConcurrencyException ex)
         {
             if (!await TaskExists(id))
             {
                 logHelper.ItemNotFound(id);
-                return UpdateResult.NotFound;
+                return (UpdateResult.NotFound, null);
             }
             else
             {
                 logHelper.Error(ex, "Concurrency error while updating.", id);
-                return UpdateResult.Error;
+                return (UpdateResult.Error, null);
             }
         }
     }
