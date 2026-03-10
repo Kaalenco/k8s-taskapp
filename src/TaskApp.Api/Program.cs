@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using TaskApp.Api.Data;
 using Scalar.AspNetCore;
 using TaskApp.Application;
+using TaskApp.Application.Services;
 
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { Args = args });
 
@@ -39,6 +40,7 @@ builder.Services.AddRouting();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+builder.Services.AddTaskService();
 
 // Configure database connection
 builder.Services.AddDatabase(builder.Configuration);

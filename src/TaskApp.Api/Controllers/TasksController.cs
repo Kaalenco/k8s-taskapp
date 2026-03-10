@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TaskApp.Api.Data;
-using TaskApp.Api.Data.Models;
+
+using TaskApp.Application.Models;
+using TaskApp.Application.Services;
 
 namespace TaskApp.Api.Controllers;
 
@@ -9,102 +9,53 @@ namespace TaskApp.Api.Controllers;
 [Route("api/[controller]")]
 public class TasksController : ControllerBase
 {
-    private readonly TaskDbContext _context;
-    private readonly ILogger<TasksController> _logger;
+     private readonly ITaskService _taskService;
 
-    public TasksController(TaskDbContext context, ILogger<TasksController> logger)
+    public TasksController(ITaskService taskService)
     {
-        _context = context;
-        _logger = logger;
+        _taskService = taskService;
     }
 
     // GET: api/tasks
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
-    {
-        _logger.LogInformation("Retrieving all tasks");
-        return await _context.Tasks.ToListAsync();
-    }
+    public async Task<ActionResult<IEnumerable<TaskModel>>> GetTasks() => Ok(await _taskService.GetAllTasks());
 
     // GET: api/tasks/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItem>> GetTask(int id)
+    public async Task<ActionResult<TaskModel>> GetTask(int id)
     {
-        _logger.LogInformation("Retrieving task with id {TaskId}", id);
-        var task = await _context.Tasks.FindAsync(id);
-
-        if (task == null)
-        {
-            _logger.LogWarning("Task with id {TaskId} not found", id);
-            return NotFound();
-        }
-
+        var task = await _taskService.GetTask(id);
+        if (task == null) return NotFound();
         return task;
     }
 
     // POST: api/tasks
     [HttpPost]
-    public async Task<ActionResult<TaskItem>> CreateTask(TaskItem task)
+    public async Task<ActionResult<TaskModel>> CreateTask(TaskModel task)
     {
-        _logger.LogInformation("Creating new task: {Title}", task.Title);
-        
-        task.CreatedAt = DateTime.UtcNow;
-        _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
+        var created = await _taskService.CreateTask(task);
+        return created!=null
+            ?  CreatedAtAction(nameof(GetTask), new { id = created.Id }, created)
+            : NoContent();
     }
 
     // PUT: api/tasks/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateTask(int id, TaskItem task)
-    {
-        if (id != task.Id)
-        {
-            return BadRequest();
-        }
-
-        _logger.LogInformation("Updating task with id {TaskId}", id);
-        
-        task.UpdatedAt = DateTime.UtcNow;
-        _context.Entry(task).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await TaskExists(id))
-            {
-                return NotFound();
-            }
-            throw;
-        }
-
-        return NoContent();
-    }
+    public async Task<IActionResult> UpdateTask(int id, TaskModel task) => ResultToActionResult(await _taskService.UpdateTask(id, task));
 
     // DELETE: api/tasks/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTask(int id)
+    public async Task<IActionResult> DeleteTask(int id) => ResultToActionResult(await _taskService.DeleteTask(id));
+
+    private IActionResult ResultToActionResult(UpdateResult result)
     {
-        _logger.LogInformation("Deleting task with id {TaskId}", id);
-        
-        var task = await _context.Tasks.FindAsync(id);
-        if (task == null)
+        return result switch
         {
-            return NotFound();
-        }
-
-        _context.Tasks.Remove(task);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private async Task<bool> TaskExists(int id)
-    {
-        return await _context.Tasks.AnyAsync(e => e.Id == id);
+            UpdateResult.BadData => BadRequest(),
+            UpdateResult.NotFound => NotFound(),
+            UpdateResult.NoChanges => NoContent(),
+            UpdateResult.Success => NoContent(),
+            _ => StatusCode(500)
+        };
     }
 }
