@@ -13,7 +13,6 @@ namespace TaskApp.UnitTests;
 /// Tests are tagged [Category("Integration")] and are intended to run via docker-compose
 /// (see Dockerfile.integration). They are skipped automatically when no connection string is present.
 /// </summary>
-[Category("Integration")]
 public class UsingTaskDbContextWithTaskService
 {
     private TaskDbContext _dbContext = null!;
@@ -50,6 +49,7 @@ public class UsingTaskDbContextWithTaskService
     // ── GetAllTasks ──────────────────────────────────────────────────────────
 
     [Test]
+    [Category("Integration")]
     public async Task GetAllTasks_WhenTableIsEmpty_ReturnsEmptyList()
     {
         var result = await _taskService.GetAllTasks();
@@ -58,6 +58,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task GetAllTasks_WhenTasksExist_ReturnsAllTasks()
     {
         await _taskService.CreateTask(new TaskModel { Name = "Task A", Description = "Desc A" });
@@ -71,6 +72,7 @@ public class UsingTaskDbContextWithTaskService
     // ── GetTask ──────────────────────────────────────────────────────────────
 
     [Test]
+    [Category("Integration")]
     public async Task GetTask_WhenTaskDoesNotExist_ReturnsNull()
     {
         var result = await _taskService.GetTask(99999);
@@ -79,6 +81,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task GetTask_WhenTaskExists_ReturnsCorrectTask()
     {
         var created = await _taskService.CreateTask(new TaskModel { Name = "My Task", Description = "Details" });
@@ -93,6 +96,7 @@ public class UsingTaskDbContextWithTaskService
     // ── CreateTask ───────────────────────────────────────────────────────────
 
     [Test]
+    [Category("Integration")]
     public async Task CreateTask_ReturnsTaskWithAssignedId()
     {
         var result = await _taskService.CreateTask(new TaskModel { Name = "New Task", Description = "Desc" });
@@ -103,6 +107,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task CreateTask_PersiststaskSoItAppearsInGetAll()
     {
         await _taskService.CreateTask(new TaskModel { Name = "Persisted Task", Description = "" });
@@ -113,6 +118,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task CreateTask_SetsCreatedAtTimestamp()
     {
         var before = DateTime.UtcNow.AddSeconds(-1);
@@ -125,6 +131,7 @@ public class UsingTaskDbContextWithTaskService
     // ── DeleteTask ───────────────────────────────────────────────────────────
 
     [Test]
+    [Category("Integration")]
     public async Task DeleteTask_WhenTaskDoesNotExist_ReturnsNotFound()
     {
         var result = await _taskService.DeleteTask(99999);
@@ -133,6 +140,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task DeleteTask_WhenTaskExists_ReturnsSuccess()
     {
         var created = await _taskService.CreateTask(new TaskModel { Name = "To Delete", Description = "" });
@@ -143,6 +151,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task DeleteTask_WhenTaskExists_RemovesItFromDatabase()
     {
         var created = await _taskService.CreateTask(new TaskModel { Name = "Gone", Description = "" });
@@ -156,6 +165,7 @@ public class UsingTaskDbContextWithTaskService
     // ── UpdateTask ───────────────────────────────────────────────────────────
 
     [Test]
+    [Category("Integration")]
     public async Task UpdateTask_WhenIdMismatch_ReturnsBadData()
     {
         var result = await _taskService.UpdateTask(1, new TaskModel { Id = 2, Name = "X" });
@@ -164,6 +174,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task UpdateTask_WhenTaskDoesNotExist_ReturnsNotFound()
     {
         var result = await _taskService.UpdateTask(99999, new TaskModel { Id = 99999, Name = "Ghost" });
@@ -172,6 +183,7 @@ public class UsingTaskDbContextWithTaskService
     }
 
     [Test]
+    [Category("Integration")]
     public async Task UpdateTask_WhenTaskExists_ReturnsSuccessAndPersistsChanges()
     {
         var created = await _taskService.CreateTask(new TaskModel { Name = "Original", Description = "Old" });
