@@ -163,6 +163,7 @@ jobs:
   build-backend-init:
     name: Build Database migration
     runs-on: ubuntu-latest  # GitHub-hosted runner
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     permissions:
       security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
@@ -262,6 +263,7 @@ jobs:
   build-frontend:
     name: Build Frontend Image
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     permissions:
       security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
@@ -337,7 +339,9 @@ jobs:
     # Waits for all builds to succeed
     # Deploy on push to trunk, or manual trigger (workflow_dispatch) from trunk.
     # Pull requests are excluded — they build and scan but never deploy.
-    if: github.ref == 'refs/heads/trunk' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
     # Step 1: Checkout code (for Helm charts)
