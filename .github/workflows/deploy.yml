@@ -447,13 +447,28 @@ jobs:
         kubectl rollout status deployment/frontend -n ${{ env.KUBERNETES_NAMESPACE }}
         kubectl get pods -n ${{ env.KUBERNETES_NAMESPACE }}
 
-    # Step 9: Run smoke tests (optional)
+    # Step 9: Run smoke tests
+    # Uses kubectl port-forward so no pod creation is required (avoids RBAC issues
+    # with the github-actions service account in the cicd namespace).
     - name: Smoke test
       run: |
-        kubectl run test --image=curlimages/curl --rm -i --restart=Never -- \
-          curl -f http://backend.${{ env.KUBERNETES_NAMESPACE }}.svc.cluster.local/health
-      # Simple health check
-      # In production, run comprehensive test suite
+        # --- Backend: /health endpoint ---
+        kubectl port-forward svc/backend 18080:80 -n ${{ env.KUBERNETES_NAMESPACE }} &
+        BACKEND_PF=$!
+        # --- Frontend: HTTP 200 on / ---
+        kubectl port-forward svc/frontend 18081:80 -n ${{ env.KUBERNETES_NAMESPACE }} &
+        FRONTEND_PF=$!
+
+        # Give port-forwards a moment to establish
+        sleep 3
+
+        echo "==> Smoke test: backend /health"
+        curl -f http://localhost:18080/health
+
+        echo "==> Smoke test: frontend /"
+        curl -f -o /dev/null -w "%{http_code}" http://localhost:18081/ | grep -q "^200$"
+
+        kill $BACKEND_PF $FRONTEND_PF || true
 
   # Job 4: Notify on completion
   notify:
