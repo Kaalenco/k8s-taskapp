@@ -408,12 +408,14 @@ jobs:
       # which can fail if the API server is behind a firewall or load balancer with
       # restricted access. Using get-or-create avoids that preflight entirely.
 
-    # Step 7a: Delete deployments to allow selector label change
-    - name: Delete deployments for selector migration
-      run: |
-        kubectl delete deployment backend frontend mysql -n ${{ env.KUBERNETES_NAMESPACE }} --ignore-not-found
-
-    # Step 7b: Deploy with Helm
+    # Step 7: Deploy with Helm
+    # NOTE: A previous step used to delete the backend/frontend/mysql Deployments before
+    # upgrading to work around Kubernetes' immutable selector fields (you cannot change
+    # spec.selector on an existing Deployment). That one-time selector change has already
+    # been applied; the delete step has been removed because it forced every deployment to
+    # recreate all pods from scratch, which routinely exceeded the 5-minute --wait timeout.
+    # If selector labels ever change again, run the following manually before the next deploy:
+    #   kubectl delete deployment backend frontend mysql -n taskapp --ignore-not-found
     - name: Deploy with Helm
       run: |
         helm upgrade taskapp ${{ env.HELM_CHART_PATH }} \
