@@ -32,9 +32,9 @@ spec:
           name: http
         env:
         - name: DB_HOST
-          value: mysql
+          value: {{ include "taskapp.databaseHost" . | quote }}
         - name: DB_PORT
-          value: "3306"
+          value: {{ .Values.database.service.port | quote }}
         - name: DB_NAME
           valueFrom:
             secretKeyRef:
@@ -54,16 +54,43 @@ spec:
           value: "Server=$(DB_HOST);Port=$(DB_PORT);Database=$(DB_NAME);User=$(DB_USER);Password=$(DB_PASSWORD);"
         resources:
           {{- toYaml .Values.backend.resources | nindent 10 }}
+        {{- with .Values.backend.startupProbe }}
+        {{- if .enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .path }}
+            port: 5073
+          initialDelaySeconds: {{ .initialDelaySeconds }}
+          periodSeconds: {{ .periodSeconds }}
+          timeoutSeconds: {{ .timeoutSeconds }}
+          failureThreshold: {{ .failureThreshold }}
+          successThreshold: {{ .successThreshold }}
+        {{- end }}
+        {{- end }}
+        {{- with .Values.backend.livenessProbe }}
+        {{- if .enabled }}
         livenessProbe:
           httpGet:
-            path: /health
+            path: {{ .path }}
             port: 5073
-          initialDelaySeconds: 10
-          periodSeconds: 10
+          initialDelaySeconds: {{ .initialDelaySeconds }}
+          periodSeconds: {{ .periodSeconds }}
+          timeoutSeconds: {{ .timeoutSeconds }}
+          failureThreshold: {{ .failureThreshold }}
+          successThreshold: {{ .successThreshold }}
+        {{- end }}
+        {{- end }}
+        {{- with .Values.backend.readinessProbe }}
+        {{- if .enabled }}
         readinessProbe:
           httpGet:
-            path: /ready
+            path: {{ .path }}
             port: 5073
-          initialDelaySeconds: 5
-          periodSeconds: 10
+          initialDelaySeconds: {{ .initialDelaySeconds }}
+          periodSeconds: {{ .periodSeconds }}
+          timeoutSeconds: {{ .timeoutSeconds }}
+          failureThreshold: {{ .failureThreshold }}
+          successThreshold: {{ .successThreshold }}
+        {{- end }}
+        {{- end }}
 {{- end }}
