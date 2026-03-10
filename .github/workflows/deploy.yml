@@ -34,14 +34,13 @@
 name: Build and Deploy TaskApp
 
 # Triggers:
-# - Push to trunk branch
-# - Pull request to trunk (for testing)
+# - After the "Run Tests" workflow completes on trunk (automated)
 # - Manual trigger (workflow_dispatch)
 on:
-  push:
-    branches:
-      - trunk
-  pull_request:
+  workflow_run:
+    workflows: ["Run Tests"]
+    types:
+      - completed
     branches:
       - trunk
   workflow_dispatch:
@@ -64,6 +63,7 @@ jobs:
   build-backend:
     name: Build Backend Image
     runs-on: ubuntu-latest  # GitHub-hosted runner
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     permissions:
       security-events: write  # required to upload SARIF results to GitHub Code Scanning
 
