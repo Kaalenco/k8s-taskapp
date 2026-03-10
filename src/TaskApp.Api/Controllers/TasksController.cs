@@ -41,13 +41,11 @@ public class TasksController : ControllerBase
 
     // PUT: api/tasks/5
     [HttpPut("{id}")]
-    public async Task<ActionResult<TaskModel>> UpdateTask(int id, TaskModel task)
+    public async Task<IActionResult> UpdateTask(int id, TaskModel task)
     {
         task.Id = id;
-        var (result, updatedTask) = await _taskService.UpdateTask(id, task);
-        return updatedTask != null
-            ? Ok(updatedTask)
-            : BadRequest();
+        var result = await _taskService.UpdateTask(id, task);
+        return ResultToActionResult(result);
     }
 
     // DELETE: api/tasks/5

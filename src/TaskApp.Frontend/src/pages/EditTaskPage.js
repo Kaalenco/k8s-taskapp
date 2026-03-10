@@ -42,7 +42,6 @@ export default function EditTaskPage() {
     })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
       })
       .then(() => navigate('/tasks'))
       .catch(e => { setError(e.message); setSaving(false); });
