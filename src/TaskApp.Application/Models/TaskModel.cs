@@ -8,8 +8,9 @@ namespace TaskApp.Application.Models;
 public class TaskModel
 {
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
@@ -18,8 +19,9 @@ public class TaskModel
         return new TaskModel
         {
             Id = entity.Id,
-            Name = entity.Title,
+            Title = entity.Title,
             Description = entity.Description ?? string.Empty,
+            Status = entity.Status,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt ?? entity.CreatedAt,
         };
@@ -27,8 +29,9 @@ public class TaskModel
 
     public void CopyTo(Api.Data.Models.TaskItem entity)
     {
-        entity.Title = Name;
+        entity.Title = Title;
         entity.Description = Description;
+        entity.Status = Status;
         entity.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -37,8 +40,9 @@ public class TaskModel
         return new Api.Data.Models.TaskItem
         {
             Id = Id,
-            Title = Name,
+            Title = Title,
             Description = Description,
+            Status = Status,
             CreatedAt = CreatedAt,
             UpdatedAt = UpdatedAt
         };

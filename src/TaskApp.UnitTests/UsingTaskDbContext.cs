@@ -61,8 +61,8 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task GetAllTasks_WhenTasksExist_ReturnsAllTasks()
     {
-        await _taskService.CreateTask(new TaskModel { Name = "Task A", Description = "Desc A" });
-        await _taskService.CreateTask(new TaskModel { Name = "Task B", Description = "Desc B" });
+        await _taskService.CreateTask(new TaskModel { Title = "Task A", Description = "Desc A" });
+        await _taskService.CreateTask(new TaskModel { Title = "Task B", Description = "Desc B" });
 
         var result = await _taskService.GetAllTasks();
 
@@ -84,12 +84,12 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task GetTask_WhenTaskExists_ReturnsCorrectTask()
     {
-        var created = await _taskService.CreateTask(new TaskModel { Name = "My Task", Description = "Details" });
+        var created = await _taskService.CreateTask(new TaskModel { Title = "My Task", Description = "Details" });
 
         var result = await _taskService.GetTask(created!.Id);
 
         Assert.That(result, Is.Not.Null);
-        Assert.That(result!.Name, Is.EqualTo("My Task"));
+        Assert.That(result!.Title, Is.EqualTo("My Task"));
         Assert.That(result.Description, Is.EqualTo("Details"));
     }
 
@@ -99,22 +99,22 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task CreateTask_ReturnsTaskWithAssignedId()
     {
-        var result = await _taskService.CreateTask(new TaskModel { Name = "New Task", Description = "Desc" });
+        var result = await _taskService.CreateTask(new TaskModel { Title = "New Task", Description = "Desc" });
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.Id, Is.GreaterThan(0));
-        Assert.That(result.Name, Is.EqualTo("New Task"));
+        Assert.That(result.Title, Is.EqualTo("New Task"));
     }
 
     [Test]
     [Category("Integration")]
     public async Task CreateTask_PersiststaskSoItAppearsInGetAll()
     {
-        await _taskService.CreateTask(new TaskModel { Name = "Persisted Task", Description = "" });
+        await _taskService.CreateTask(new TaskModel { Title = "Persisted Task", Description = "" });
 
         var all = await _taskService.GetAllTasks();
 
-        Assert.That(all.Any(t => t.Name == "Persisted Task"), Is.True);
+        Assert.That(all.Any(t => t.Title == "Persisted Task"), Is.True);
     }
 
     [Test]
@@ -123,7 +123,7 @@ public class UsingTaskDbContextWithTaskService
     {
         var before = DateTime.UtcNow.AddSeconds(-1);
 
-        var result = await _taskService.CreateTask(new TaskModel { Name = "Timestamped", Description = "" });
+        var result = await _taskService.CreateTask(new TaskModel { Title = "Timestamped", Description = "" });
 
         Assert.That(result!.CreatedAt, Is.GreaterThan(before));
     }
@@ -143,7 +143,7 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task DeleteTask_WhenTaskExists_ReturnsSuccess()
     {
-        var created = await _taskService.CreateTask(new TaskModel { Name = "To Delete", Description = "" });
+        var created = await _taskService.CreateTask(new TaskModel { Title = "To Delete", Description = "" });
 
         var result = await _taskService.DeleteTask(created!.Id);
 
@@ -154,7 +154,7 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task DeleteTask_WhenTaskExists_RemovesItFromDatabase()
     {
-        var created = await _taskService.CreateTask(new TaskModel { Name = "Gone", Description = "" });
+        var created = await _taskService.CreateTask(new TaskModel { Title = "Gone", Description = "" });
 
         await _taskService.DeleteTask(created!.Id);
 
@@ -168,7 +168,7 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task UpdateTask_WhenIdMismatch_ReturnsBadData()
     {
-        var result = await _taskService.UpdateTask(1, new TaskModel { Id = 2, Name = "X" });
+        var result = await _taskService.UpdateTask(1, new TaskModel { Id = 2, Title = "X" });
 
         Assert.That(result, Is.EqualTo(UpdateResult.BadData));
     }
@@ -177,7 +177,7 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task UpdateTask_WhenTaskDoesNotExist_ReturnsNotFound()
     {
-        var result = await _taskService.UpdateTask(99999, new TaskModel { Id = 99999, Name = "Ghost" });
+        var result = await _taskService.UpdateTask(99999, new TaskModel { Id = 99999, Title = "Ghost" });
 
         Assert.That(result, Is.EqualTo(UpdateResult.NotFound));
     }
@@ -186,14 +186,14 @@ public class UsingTaskDbContextWithTaskService
     [Category("Integration")]
     public async Task UpdateTask_WhenTaskExists_ReturnsSuccessAndPersistsChanges()
     {
-        var created = await _taskService.CreateTask(new TaskModel { Name = "Original", Description = "Old" });
-        var updated = new TaskModel { Id = created!.Id, Name = "Updated", Description = "New" };
+        var created = await _taskService.CreateTask(new TaskModel { Title = "Original", Description = "Old" });
+        var updated = new TaskModel { Id = created!.Id, Title = "Updated", Description = "New" };
 
         var result = await _taskService.UpdateTask(created.Id, updated);
 
         Assert.That(result, Is.EqualTo(UpdateResult.Success));
         var fetched = await _taskService.GetTask(created.Id);
-        Assert.That(fetched!.Name, Is.EqualTo("Updated"));
+        Assert.That(fetched!.Title, Is.EqualTo("Updated"));
         Assert.That(fetched.Description, Is.EqualTo("New"));
     }
 }

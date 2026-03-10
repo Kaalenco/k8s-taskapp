@@ -33,7 +33,7 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
     {
         var logHelper = LoggerHelper.For(logger, nameof(TaskModel));
 
-        logHelper.ItemCreating(task.Name);
+        logHelper.ItemCreating(task.Title);
         var entity = task.ToEntityModel();
         entity.CreatedAt = DateTime.UtcNow;
         context.Tasks.Add(entity);
@@ -42,7 +42,7 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
             var modified = await context.SaveChangesAsync();
             if (modified == 0)
             {
-                logHelper.CouldNotCreate(null, task.Name);
+                logHelper.CouldNotCreate(null, task.Title);
                 return null;
             }
             else
@@ -53,7 +53,7 @@ public class TaskService(TaskDbContext context, ILogger<TaskService> logger) : I
         }
         catch (Exception ex)
         {
-            logHelper.CouldNotCreate(ex, task.Name);
+            logHelper.CouldNotCreate(ex, task.Title);
             return null;
         }
     }

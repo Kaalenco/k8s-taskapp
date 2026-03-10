@@ -280,9 +280,14 @@ ingress:
 
   # Annotations for ingress controller
   annotations:
-    # Do NOT add force-ssl-redirect here when an external load balancer (e.g. UpCloud LB)
-    # terminates TLS — the LB forwards plain HTTP to the ingress controller, so
-    # force-ssl-redirect would cause an infinite redirect loop.
+    # ssl-redirect must be false when an external load balancer (e.g. UpCloud LB) terminates
+    # TLS and forwards plain HTTP to the ingress controller on port 80.
+    # If this were true, nginx would redirect the plain-HTTP request to HTTPS, the LB would
+    # terminate that too and forward plain HTTP again → infinite redirect loop.
+    # The LB backend MUST be configured as HTTP on port 80 (not HTTPS on port 443).
+    # Sending plain HTTP to nginx's port 443 causes: "400 The plain HTTP request was sent
+    # to HTTPS port" because nginx has SSL configured on 443 — unfixable from the ingress side.
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
